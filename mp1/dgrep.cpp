@@ -147,22 +147,18 @@ int init(int argc, char *argv[]){
 
 int main(int argc, char *argv[]){
 	init(argc, argv);
-	// To transfer it into multithread version.
+
 	for (int i = 1; i <= 10; i++) {
 		threads[i] = thread(query, i, grep_query(i, argc, argv));
 	}
+
 	for (int i = 1; i <= 10; i++) {
 		threads[i].join();
 	}
 	
 	for (int i = 1; i <= 10; i++) {
 		total_line += line_count[i];
-		printf("Grep %d lines from machine %d\n", line_count[i], i);
+		printf("Grep %8d lines from machine %d\n", line_count[i], i);
 	}
 	printf("%d\n", total_line);
-	/*
-	printf("Testing\n");
-	query(1, grep_query(1, argc, argv));
-	*/
-
 }
