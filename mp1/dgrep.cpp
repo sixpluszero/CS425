@@ -136,11 +136,10 @@ int init(int argc, char *argv[]){
 	vm[0] = "localhost";
 	for (int i = 1; i <= 10; i++){
 		char tmp[100];
-		sprintf(tmp, "grep.%02d.log", i);
+		sprintf(tmp, "grep.%02d.txt", i);
 		remove(tmp);
 		sprintf(tmp, "fa17-cs425-g59-%02d.cs.illinois.edu", i);
 		vm[i] = tmp;
-
 	}
 	return 0;
 }
