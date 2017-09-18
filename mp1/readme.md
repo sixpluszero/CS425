@@ -1,5 +1,4 @@
 # UIUC CS425 MP1 
-===========
 This repository contains key source files that enable the distributed grep functionalities and the unit test for it.
 
 Distributed Grep 
