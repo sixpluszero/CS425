@@ -6,7 +6,6 @@ The worker.cpp is the server side daemon source code, and the dgrep.cpp is the s
 
 
 ## Run the command
--------
 To deploy the source files and compile for binaries, type the following commands:  
 
 (1). ./push_remote.py  
@@ -19,7 +18,6 @@ To deploy the source files and compile for binaries, type the following commands
 
      
 ## Unit Test   
--------
 The file “test_grep.py” is the unit test for distributed-grep. It should be placed at vm1:/usr/local/mp1.  
 Run the command “chmod a+x test_grep.py” and use “./test_grep.py ” to run it.  
 It would create a folder named “testgrep+time” to store detailed logs on every vm.  
