@@ -16,16 +16,14 @@
 #include <algorithm>
 using namespace std;
 #define PORT "3490"  // the port users will be connecting to
-#define BACKLOG 20	 // how many pending connections queue will hold
+#define CONNECTION 20	 // how many pending connections queue will hold
 #define MAXDATASIZE 8192 // max number of bytes we can get at once 
 
 
 void sigchld_handler(int s){
 	// waitpid() might overwrite errno, so we save and restore it:
 	int saved_errno = errno;
-
 	while(waitpid(-1, NULL, WNOHANG) > 0);
-
 	errno = saved_errno;
 }
 
@@ -38,6 +36,7 @@ void *get_in_addr(struct sockaddr *sa){
 	}
 }
 
+// execute shell command
 string exec(const char* cmd) {
     char buffer[128];
     std::string result = "";
@@ -56,6 +55,7 @@ string exec(const char* cmd) {
     return result;
 }
 
+// server's main logic
 int server_start(){
 	int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
 	struct sockaddr_storage their_addr; // connector's address information
@@ -83,35 +83,29 @@ int server_start(){
 			perror("server: socket");
 			continue;
 		}
-
-		// I change it from REUSEADDR to REUSEPORT
 		if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
 			perror("setsockopt");
 			exit(1);
 		}
-
 		if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
 			close(sockfd);
 			perror("server: bind");
 			continue;
 		}
-
 		break;
 	}
-
 	freeaddrinfo(servinfo); // all done with this structure
-
 	if (p == NULL)  {
 		fprintf(stderr, "server: failed to bind\n");
 		exit(1);
 	}
-
-	if (listen(sockfd, BACKLOG) == -1) {
+	if (listen(sockfd, CONNECTION) == -1) {
 		perror("listen");
 		exit(1);
 	}
 
-	sa.sa_handler = sigchld_handler; // reap all dead processes
+	// reap all dead processes
+	sa.sa_handler = sigchld_handler; 
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_RESTART;
 	if (sigaction(SIGCHLD, &sa, NULL) == -1) {
@@ -119,6 +113,7 @@ int server_start(){
 		exit(1);
 	}
 
+	// main server loop
 	while(1) {  
 		sin_size = sizeof their_addr;
 		new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
@@ -128,9 +123,13 @@ int server_start(){
 		}
 		inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr *)&their_addr), s, sizeof s);
 		printf("server: got connection from %s\n", s);
+
+		// We are in child process
 		if (!fork()) { 
+			
 			close(sockfd); 
 
+			// Receive the command
 			string query = "";
 			char buf[MAXDATASIZE];
 			if ((numbytes = recv(new_fd, buf, MAXDATASIZE-1, 0)) == -1) {
@@ -138,32 +137,25 @@ int server_start(){
 				exit(1);
 			}
 			buf[numbytes] = '\0';
-			printf("Receive: %s\n", buf);
 			string query_cmd = buf;
 			string res = exec(query_cmd.c_str());
-			/*
-			size_t bytes_sent = 0;
-			while (numbytes = send(new_fd, res.c_str() + bytes_sent, res.length(), 0))
-			*/
-			//if (send(new_fd, res.c_str(), res.length(), 0) == -1) perror("send");
+
+			// Send back the result
 			ssize_t total = 0;
 			int scount = 0;
 			while (true){
 				ssize_t sent_bytes = send(new_fd, res.c_str() + total, MAXDATASIZE - 1, 0);
 				if (sent_bytes == -1) perror("send");
-				//printf("sent: %ld\n", sent_bytes);
-				//printf("count: %d\n", ++scount);
-				
 				if (sent_bytes < MAXDATASIZE - 1) {
 					break;
 				}
-				
 				total += sent_bytes;
-				//printf("total: %ld\n", total);
 				if (total >=  res.length()) {
 					break;
 				}
 			}
+
+			// Just for debug.
 			printf("total is: %ld\n", total);
 			printf("length: %lu\n", res.length());
 			printf("line count: %ld\n", count(res.begin(), res.end(), '\n'));

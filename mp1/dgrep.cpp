@@ -42,6 +42,7 @@ string add_escape(char *str) {
 	return ret;
 }
 
+// grep_query() generate the grep command for target virtual machine
 string grep_query(int id, int argc, char*argv[]){
 	string ret = "grep";
 	for (int i = 1; i < argc-1; i++) {
@@ -57,7 +58,7 @@ string grep_query(int id, int argc, char*argv[]){
 	return ret + " " + file;
 }
 
-
+// query() send query to a target machine, and recevie the target content.
 int query(int id, string cmd) {
 	int sockfd, numbytes;  
 	char buf[MAXDATASIZE];
@@ -71,14 +72,14 @@ int query(int id, string cmd) {
 	hints.ai_socktype = SOCK_STREAM;
 
 	if ((rv = getaddrinfo(server, PORT, &hints, &servinfo)) != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
+		//fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
 		return 1;
 	}
 
 	// loop through all the results and connect to the first we can
 	for(p = servinfo; p != NULL; p = p->ai_next) {
 		if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-			perror("client: socket");
+			//perror("client: socket");
 			continue;
 		}
 		if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
@@ -89,17 +90,16 @@ int query(int id, string cmd) {
 		break;
 	}
 	if (p == NULL) {
-		fprintf(stderr, "client: failed to connect\n");
+		//fprintf(stderr, "client: failed to connect\n");
 		return 2;
 	}
 	inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-	//printf("client: connecting to %s\n", s);
 	freeaddrinfo(servinfo); 
 
-	//printf("id: %d's cmd is %s\n", id, cmd.c_str());
-	// Echo service;
+	// Send the command to the remote daemon
 	if (send(sockfd, cmd.c_str(), cmd.length(), 0) == -1) perror("send");
 
+	// Receive the content from the remote daemon
 	string result = "";
 	int tmp = 0, scount = 0;
 	while ((numbytes = recv(sockfd, buf, MAXDATASIZE - 1, 0)) > 0) {
@@ -108,7 +108,6 @@ int query(int id, string cmd) {
 			exit(1);				
 		}
 		scount++;
-		//printf("%d %lu %d %d\n", tmp, result.length(), numbytes, scount);
 		tmp += numbytes;
 		if (numbytes < MAXDATASIZE-1) {
 			buf[numbytes] = '\0';
@@ -116,7 +115,7 @@ int query(int id, string cmd) {
 		result += buf;
 	}
 
-	//printf("machine %d starting writing\n", id);
+	// Save to file, and update the line count
 	FILE *f;  
 	char filename[20];
 	sprintf(filename, "grep.%02d.txt", id); 
@@ -125,7 +124,6 @@ int query(int id, string cmd) {
 	fclose(f);
 	
 	line_count[id] =  count(result.begin(), result.end(), '\n');
-	
 
 	close(sockfd);
 	return 0;
@@ -155,6 +153,7 @@ int main(int argc, char *argv[]){
 		threads[i].join();
 	}
 	
+	// Collect the total answer
 	for (int i = 1; i <= 10; i++) {
 		total_line += line_count[i];
 		printf("Grep %8d lines from machine %d\n", line_count[i], i);
