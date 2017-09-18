@@ -24,7 +24,7 @@ Unit Test
      
 Unit Test   
 -------
-The file “test_grep.py” is the unit test for distributed-grep. It should be placed at vm1:/usr/local/mp1. 
-“chmod a+x test_grep.py” and use “./test_grep.py ” to run it. 
-It would create a folder named “testgrep+time” to store detailed logs on every vm.
+The file “test_grep.py” is the unit test for distributed-grep. It should be placed at vm1:/usr/local/mp1.  
+Run the command “chmod a+x test_grep.py” and use “./test_grep.py ” to run it.  
+It would create a folder named “testgrep+time” to store detailed logs on every vm.  
 The test program firstly generates random log to each vm and secondly compares the result of grep and distributed-grep with words in different frequency, like “HTTP”(frequent), “.com”(sometimes), “uffba.msfyqmhq.xzvqj.elc.net”(rare) and etc. 
