@@ -9,20 +9,19 @@
 class Daemon(){
 private:
 	UDPSocket sock_service;
-    vector<Node> member_list;
-    map<string, long long> contact_list;
-    int self_index;
-    long long local_timestamp;
-    mutex lock;
+	vector<Node> member_list; // No. = index in the vector
+	map<string, long long> contact_list; // <IP, timestamp>
+	int self_index;
+	long long local_timestamp;
+	mutex lock;
 public:
 	Daemon();
-    updateContact(); 
-	heartbeat();
-    join();
-	leave();
-	receive();
+	updateContact(); 
+	heartbeat(); // send hb to contacts
+	join(); // send join request to introducer, receive membership list, initial contact list
+	leave(); // send leave message to contacts
+	receive(); // endless listen to all messages
 	updateMember();
-    resolve(); /* Only for introducer */
-    start();
+	start(); // initial work. Join & start receive
+	resolve(); // Only for introducer. Introduce a new member
 }
-
