@@ -21,8 +21,7 @@ private:
 public:
     UDPSocket();
     int Send(const char* remoteIP, const char* msg);
-    int Recv(char* remoteIp, char* recvMsg);
-    
+    int Recv(char* remoteIp, char* recvMsg);    
 };
 
 
