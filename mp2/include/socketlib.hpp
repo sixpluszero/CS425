@@ -12,16 +12,16 @@
 #include <string>
 
 #define BUFSIZE 2048
-#define PORT 27015 // This is Counter Strike 1.6's port.
+//#define PORT 27015 // This is Counter Strike 1.6's port.
 
 class UDPSocket {
 private:
     struct sockaddr_in serverAddr, clientAddr, sendAddr, recvAddr;
-    int serverFD, clientFD;
+    int serverFD, clientFD, port;
 public:
-    UDPSocket();
-    int Send(const char* remoteIP, const char* msg);
-    int Recv(char* remoteIp, char* recvMsg);    
+    UDPSocket(int port);
+    int send(const char* remoteIP, const char* msg);
+    int recv(char* remoteIp, char* recvMsg);    
 };
 
 
