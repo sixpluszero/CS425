@@ -23,8 +23,13 @@ Daemon::Daemon(int flag): msg_socket(UDPSocket(8888)){
 }
 
 long long Daemon::unix_timestamp(){
+    /*
     time_t t = std::time(0);
     long long now = static_cast<long long> (t);
+    */
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    long int now = tp.tv_sec * 1000 + tp.tv_usec / 1000;
     return now;
 }
 

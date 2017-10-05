@@ -5,6 +5,7 @@
 #include <map>
 #include <ctime>
 #include <string>
+#include <sys/time.h>
 #include "socketlib.hpp"
 #include "node.hpp"
 #define NODE 10
