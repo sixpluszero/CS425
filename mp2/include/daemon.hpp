@@ -42,6 +42,7 @@ public:
 	/* Utility funcitons */
 	long long unixTimestamp();
 	void log(string s);
+	void log(char *fmt, ...);
 
 	/* Receiver handler functions */
 	void joinHandler(char * remote_ip);

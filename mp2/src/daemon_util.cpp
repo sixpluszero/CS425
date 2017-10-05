@@ -16,3 +16,13 @@ void Daemon::log(string s){
     fclose(fp);
     log_lock.unlock();
 }
+
+/* Use with caution!! */
+void Daemon::log(char *fmt, ...) {
+    char buf[1024];
+    va_list args;
+    va_start(args, fmt);
+    vsprintf(buf, fmt, args);
+    va_end(args);
+    log(string(buf));
+}
