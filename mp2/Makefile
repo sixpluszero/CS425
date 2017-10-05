@@ -1,9 +1,14 @@
 CC=g++
-OBJ_DIR=src
+SRC_DIR=src
+OBJ_DIR=obj
 INC_DIR=include
 CFLAGS=-I$(INC_DIR) -c -Wall -std=c++11 
 LDFLAGS=
-SOURCES=$(OBJ_DIR)/socketlib.cpp $(OBJ_DIR)/node.cpp $(OBJ_DIR)/daemon.cpp $(OBJ_DIR)/main.cpp 
+SOURCES=$(SRC_DIR)/socketlib.cpp \
+		$(SRC_DIR)/node.cpp \
+		$(SRC_DIR)/daemon.cpp \
+		$(SRC_DIR)/daemon_member.cpp \
+		$(SRC_DIR)/main.cpp 
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=server
 
@@ -16,5 +21,5 @@ $(EXECUTABLE): $(OBJECTS)
 		$(CC) $(CFLAGS) $< -o $@
 
 clean:
-		rm $(OBJ_DIR)/*.o
-		rm $(EXECUTABLE)
+		rm -f $(SRC_DIR)/*.o
+		rm -f $(EXECUTABLE)

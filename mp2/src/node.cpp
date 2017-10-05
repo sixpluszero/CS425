@@ -21,11 +21,20 @@ VMNode::VMNode(const VMNode &tmp) {
     join_timestamp = tmp.join_timestamp;
 }
 
-VMNode::VMNode(){
+VMNode::VMNode(string s) {
+    int idx;
+    idx = s.find("/");
+    id = stoi(s.substr(0, idx));
+    s.substr(idx+1, s.length());
+    idx = s.find("/");
+    ip = s.substr(0, idx);
+    s.substr(idx+1, s.length());
+    join_timestamp = stoi(s);
+}
 
+VMNode::VMNode(){
 }
 
 string VMNode::toString() {
-    //return ip + "-" + std::to_string(join_timestamp);
-    return ip;
+    return std::to_string(id) + "/" + ip + "/" + std::to_string(join_timestamp);
 }

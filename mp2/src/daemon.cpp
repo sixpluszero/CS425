@@ -9,6 +9,7 @@ Daemon::Daemon(int flag): msg_socket(UDPSocket(8888)){
         printf("%s is a known contact.\n", contact.c_str());
     }
 
+    /* Flag == 1 means this is first machine in the cluster */
     if (flag == 1) {
         self_index = 1;
         string my_addr = "172.22.154.182";
@@ -27,25 +28,28 @@ long long Daemon::unix_timestamp(){
     return now;
 }
 
-void Daemon::join() {
-    for (int i = 0; i < INTRODUCER; i++) {
-        printf("%s\n", known_hosts[i].c_str());
-        msg_socket.send(known_hosts[i].c_str(), "join");
-        char buf[1000];
-        char rip[100];
-        msg_socket.recv(rip, buf);
-        printf("%s\n", buf);
-        break;
-    }
-}
+
 
 void Daemon::receive() {
     while (true) {
         char buf[BUFSIZE];
         char rip[BUFSIZE];
         msg_socket.recv(rip, buf);
-        //buf[recvBytes] = '\0';
+        /* [TODO] Transform to log */
         printf("Receive %s from %s\n", buf, rip);
+        switch(buf[0]){
+            case 'j': /* Join */
+                joinHandler(rip);
+                break;
+            case 'l': /* Leave */
+                break;
+            case 'h': /* Heartbeat */
+                break;
+            case 'm': /* Membership */
+                break;
+            default:
+                break;
+        }
         
         /* 
             Process request in new thread
@@ -53,14 +57,7 @@ void Daemon::receive() {
         
         */
 
-        string response = "";
-        /* Marshel my membership */
-        response = response + std::to_string(member_list.size());
-        for (std::map<int, VMNode>::iterator it = member_list.begin(); it != member_list.end(); it++) {
-            response += ",";
-            response += (std::to_string((it->second).id) + "/" + std::to_string((it->second).join_timestamp) + "/" + (it->second).ip);
-        }
-        msg_socket.send(rip, response.c_str());
+        
     }
 }
 

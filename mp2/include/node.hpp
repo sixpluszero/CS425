@@ -9,5 +9,6 @@ public:
     VMNode(string _ip, long long _join_ts, int _id);
     VMNode(string _ip, long long _join_ts);
     VMNode(const VMNode &tmp);
+    VMNode(string s);
     VMNode();
 };
