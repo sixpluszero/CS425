@@ -20,23 +20,30 @@ private:
 	map<int, long long> contact_list;
 	int self_index;
 	long long local_timestamp;
-	//mutex lock;
+	mutex member_lock;
+	mutex log_lock;
 public:
+	/* Init function */
 	Daemon(int flag);
 	
+	/* First level functions */
  	void timeout(); // check whether its neighbors are down	
 	void heartbeat(); // send hb to contacts
-	void join(); // send join request to introducer, receive membership list, initialize contact list
+	void join(); // send join request to introducer, receive membership list
 	void leave(); // send leave message to contacts
 	void receive(); // listen to all messages endlessly
 	void start(); // initial work. Join & start receive
 	
-	void joinHandler(char * remote_ip);
+	/* Membership functions */
 	int updateMember(char * remote_ip, int flag);
 	void updateContact(long long ts);
 	void setMemberList(string s);
 
-	//void resolve(); // only for introducer. introduce a new member
-	long long unix_timestamp();
-	//string getSelfAddress();
+	/* Utility funcitons */
+	long long unixTimestamp();
+	void log(string s);
+
+	/* Receiver handler functions */
+	void joinHandler(char * remote_ip);
+	
 };
