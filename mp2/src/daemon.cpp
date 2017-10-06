@@ -8,6 +8,8 @@ Daemon::Daemon(int flag): msg_socket(UDPSocket(8888)){
         known_hosts.push_back(contact);
         printf("%s is a known contact.\n", contact.c_str());
     }
+    member_list.clear();
+    contact_list.clear();
 
     /* Flag == 1 means this is first machine in the cluster */
     if (flag == 1) {
@@ -16,7 +18,6 @@ Daemon::Daemon(int flag): msg_socket(UDPSocket(8888)){
         long long current_ts = unixTimestamp();
         VMNode tmp(my_addr, current_ts, self_index);
         member_list[self_index] = tmp;
-        printf("%s\n", member_list[1].ip.c_str());
     } else {
         join();
     }
@@ -37,9 +38,11 @@ void Daemon::join() {
             w = w.substr(idx + 1, w.length());
             idx = w.find(",");
             self_index = stoi(w.substr(0, idx));
-            w = w.substr(idx + 1, w.length());
             setMemberList(w);
-            printf("%lld recv join msg: %s\n", unixTimestamp(), buf);
+            long long ts = unixTimestamp();
+            updateContact(ts);
+            //log(contactsToString());
+            //printf("%lld recv join msg: %s\n", unixTimestamp(), buf);
             break;    
         }
         break;
@@ -67,8 +70,10 @@ void Daemon::receive() {
             case 'l': /* Leave */
                 break;
             case 'h': /* Heartbeat */
+                heartbeatHandler(rip);
                 break;
-            case 'm': /* Membership */
+            case 'u': /* Membership */
+                updateHandler(string(buf));
                 break;
             default:
                 break;

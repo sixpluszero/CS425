@@ -1,17 +1,13 @@
 #include "daemon.hpp"
 using namespace std;
-
-
+void foo(){
+}
 int main(int argc, char* argv[]){
-    if (argc > 1) {
-        if (strcmp(argv[1], "prime_start") == 0) {
-            Daemon myServer(1);
-            myServer.receive();
-        } else {
-            Daemon myServer(0);
-        }
-
-        
-
-    }
+    int flag = 0;
+    if ((argc > 1) && (strcmp(argv[1], "prime_start") == 0)) flag = 1;
+    Daemon myServer(flag);
+    std::thread recv_t (&Daemon::receive, &myServer);
+    //myServer.receive();
+    
+    recv_t.join();
 }

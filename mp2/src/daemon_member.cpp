@@ -4,6 +4,12 @@ using namespace std;
 void Daemon::updateContact(long long ts){
     vector<int> idx;
     int tmp = 0, my_loc = 0, left_cnt = 0, right_cnt = 0;
+    /*
+    map<int, long long> tmp_list;
+    for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
+        tmp_list[it->first] = it->second;
+    }
+    */
     contact_list.clear();
 
     for (auto it = member_list.begin(); it != member_list.end(); it++){
@@ -16,7 +22,6 @@ void Daemon::updateContact(long long ts){
             break;
         }
     }
-    
     tmp = my_loc + 1;
     while (right_cnt < 2 && tmp != my_loc) {
         if (tmp == int(idx.size())) tmp = 0;
@@ -27,31 +32,35 @@ void Daemon::updateContact(long long ts){
     }
     tmp = my_loc - 1;
     while (left_cnt < 2 && tmp != my_loc) {
-        if (tmp == 0) tmp = int(idx.size())-1;
+        if (tmp == -1) tmp = int(idx.size())-1;
         if (tmp == my_loc) break;
         contact_list[idx[tmp]] = ts;
         left_cnt++;
         tmp--;
     }
+    /*
+    for (auto it = tmp_list.begin(); it != tmp_list.end(); it++) {
+        if (contact_list.find(it->first) != contact_list.end()){
+            contact_list[it->first] = it->second;
+        }
+    }
+    */
+
+    log("update contact %s", contactsToString().c_str());
 }
 
-int Daemon::updateMember(char *remote_ip, int flag) {
+int Daemon::newMember(char *remote_ip) {
     long long ts = unixTimestamp();
     int remote_pos = 0;
-    if (flag == 0) { /* Join member */
-        for (int i = 1; i <= NODE; i++) {
-            if (member_list.find(i) == member_list.end()){
-                string rip = remote_ip;
-                VMNode tmp(rip, ts, i);
-                member_list[i] = tmp;
-                remote_pos = i;
-                printf("[LOG] %s join at %lld in ring %d\n", remote_ip, ts, remote_pos);
-                break;
-            }
+    for (int i = 1; i <= NODE; i++) {
+        if (member_list.find(i) == member_list.end()){
+            string rip = remote_ip;
+            VMNode tmp(rip, ts, i);
+            member_list[i] = tmp;
+            remote_pos = i;
+            log("insert %s in %dth position", remote_ip, remote_pos);
+            break;
         }
-        return remote_pos;
-    } else { /* Leave(Crash) member */
-        // [TODO]
     }
     updateContact(ts); /* update contact */
     return remote_pos;
@@ -60,7 +69,6 @@ int Daemon::updateMember(char *remote_ip, int flag) {
 
 void Daemon::setMemberList(string w) {
     int pIdx = w.find(",");
-    //int n = stoi(w.substr(0, pIdx));
     w = w.substr(pIdx+1, w.length());
     while (w.length()) {
         pIdx = w.find(",");
@@ -73,5 +81,23 @@ void Daemon::setMemberList(string w) {
             break;
         }
     }
+    log("init member: %s", membersToString().c_str());
 }
 
+string Daemon::membersToString(){
+    string ans = "";
+    ans += std::to_string(member_list.size());
+    for (auto it = member_list.begin(); it != member_list.end(); it++) {
+        ans += "," + (it->second).toString();
+    }
+    return ans;
+}
+
+string Daemon::contactsToString(){
+    string ans = "";
+    ans += std::to_string(contact_list.size());
+    for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
+        ans += "," + std::to_string(it->first) + "/" + std::to_string(it->second);
+    }
+    return ans;
+}

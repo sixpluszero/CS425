@@ -6,6 +6,7 @@
 #include <ctime>
 #include <string>
 #include <sys/time.h>
+#include <stdarg.h>
 #include "socketlib.hpp"
 #include "node.hpp"
 #define NODE 10
@@ -35,9 +36,11 @@ public:
 	void start(); // initial work. Join & start receive
 	
 	/* Membership functions */
-	int updateMember(char * remote_ip, int flag);
+	int newMember(char * remote_ip);
 	void updateContact(long long ts);
 	void setMemberList(string s);
+	string contactsToString();
+	string membersToString();
 
 	/* Utility funcitons */
 	long long unixTimestamp();
@@ -45,6 +48,8 @@ public:
 	void log(char *fmt, ...);
 
 	/* Receiver handler functions */
-	void joinHandler(char * remote_ip);
+	void joinHandler(char *remote_ip);
+	void updateHandler(string msg);
+	void heartbeatHandler(char *remote_ip);
 	
 };

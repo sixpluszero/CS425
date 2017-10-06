@@ -25,11 +25,11 @@ VMNode::VMNode(string s) {
     int idx;
     idx = s.find("/");
     id = stoi(s.substr(0, idx));
-    s.substr(idx+1, s.length());
+    s = s.substr(idx+1, s.length());
     idx = s.find("/");
     ip = s.substr(0, idx);
-    s.substr(idx+1, s.length());
-    join_timestamp = stoi(s);
+    s = s.substr(idx+1, s.length());
+    join_timestamp = stoll(s);
 }
 
 VMNode::VMNode(){
