@@ -10,7 +10,7 @@
 #include "socketlib.hpp"
 #include "node.hpp"
 #define NODE 10
-#define INTRODUCER 3
+#define INTRODUCER 5
 #define HEARTBEAT 250000 /* (1/1000000 sec) Period for heartbeat() to wakeup and scan */
 #define SCAN 500000 /* (1/1000000 sec) Period for timeout() to wakeup and scan */
 #define FAILURE 1000 /* (1/1000 sec) Time for timeout() to detect the failure */
@@ -52,12 +52,11 @@ public:
 	/* Utility funcitons */
 	long long unixTimestamp();
 	void log(string s, int flag = 0);
-	void log(char *fmt, ...);
+	void log(const char *fmt, ...);
 	void plog(string s);
-	void plog(char *fmt, ...);
+	void plog(const char *fmt, ...);
 	void setSelfAddr();
 	void setLogFile();
-	void timed_recv(char *rip, char *buf, bool *flag);
 
 	/* Receiver handler functions */
 	void joinHandler(char *remote_ip);

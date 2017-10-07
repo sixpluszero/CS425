@@ -19,7 +19,7 @@ void Daemon::log(string s, int flag){
 }
 
 /* Use with caution!! */
-void Daemon::log(char *fmt, ...) {
+void Daemon::log(const char *fmt, ...) {
     char buf[1024];
     va_list args;
     va_start(args, fmt);
@@ -29,7 +29,7 @@ void Daemon::log(char *fmt, ...) {
 }
 
 /* Use with caution!! */
-void Daemon::plog(char *fmt, ...) {
+void Daemon::plog(const char *fmt, ...) {
     char buf[1024];
     va_list args;
     va_start(args, fmt);

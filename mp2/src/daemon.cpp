@@ -62,7 +62,7 @@ void Daemon::join() {
 }
 
 void Daemon::leave() {
-    plog("Monitoring leave message");
+    plog("monitoring leave message");
     while (leave_flag == false) {
         char buf[BUFSIZE];
         char rip[BUFSIZE];
@@ -91,7 +91,7 @@ void Daemon::heartbeat() {
             msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
         }
     }
-    plog("Module heartbeat exit");
+    plog("module heartbeat exit");
 }
 
 void Daemon::timeout() {
@@ -103,7 +103,7 @@ void Daemon::timeout() {
         vector<string> del_node;
         for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
             if ((ts - it->second) > FAILURE) {
-                plog("%d(%s/%lld) failed since %lld", it->first, member_list[it->first].ip.c_str(), member_list[it->first].join_timestamp, it->second);
+                plog("crash %d(%s/%lld) failed (latest %lld)", it->first, member_list[it->first].ip.c_str(), member_list[it->first].join_timestamp, it->second);
                 to_remove.push_back(it->first);
                 
             }
@@ -121,8 +121,13 @@ void Daemon::timeout() {
                 msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
             }                
         }
+
+        if (to_remove.size() > 0) {
+            plog("crash update member list: %s", membersToString().c_str());
+            plog("crash update contact list: %s", contactsToString().c_str());
+        }
     }
-    plog("Module timeout exit");
+    plog("module timeout exit");
 }
 
 void Daemon::receive() {
@@ -150,5 +155,5 @@ void Daemon::receive() {
                 break;
         }
     }
-    plog("Module receive exit");
+    plog("module receive exit");
 }

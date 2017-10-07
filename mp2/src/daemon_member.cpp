@@ -16,7 +16,7 @@ void Daemon::updateContact(long long ts){
         idx.push_back(it->first);
     }
     sort(idx.begin(), idx.end());
-    for (auto i = 0; i < idx.size(); i++){
+    for (auto i = 0; i < int(idx.size()); i++){
         if (idx[i] == self_index) {
             my_loc = i;
             break;
@@ -75,7 +75,7 @@ void Daemon::setMemberList(string w) {
         if (pIdx == -1) pIdx = w.length();
         VMNode newNode(w.substr(0, pIdx));
         member_list[newNode.id] = newNode;
-        if (pIdx < w.length()) {
+        if (pIdx < int(w.length())) {
             w = w.substr(pIdx+1, w.length());
         } else {
             break;

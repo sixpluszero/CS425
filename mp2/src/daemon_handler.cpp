@@ -6,8 +6,8 @@ void Daemon::joinHandler(char *remote_ip) {
     int remote_pos = 0;
     
     remote_pos = newMember(remote_ip); /* update membership */
-    plog("update member list: %s", membersToString().c_str());
-    plog("update contact list: %s", contactsToString().c_str());
+    plog("join update member list: %s", membersToString().c_str());
+    plog("join update contact list: %s", contactsToString().c_str());
     /* Send back message */
     string ret = "reply";
     ret += "," + std::to_string(remote_pos);
@@ -29,7 +29,7 @@ void Daemon::joinHandler(char *remote_ip) {
 
 void Daemon::updateHandler(string msg) {
     string backup_msg = msg;
-    plog(msg);
+    //plog(msg);
     if (msg[7] == 'j') { /* A join message */
         msg = msg.substr(12, msg.length());
         VMNode tmp(msg);
@@ -38,8 +38,8 @@ void Daemon::updateHandler(string msg) {
             //plog("%s has been stored", tmp.toString().c_str());
             return;
         } else {
+            plog(backup_msg);
             member_list[tmp.id] = tmp;
-            plog("update member list: %s", membersToString().c_str());
             long long ts = unixTimestamp();
             updateContact(ts);
             /* Broadcast update */
@@ -47,6 +47,9 @@ void Daemon::updateHandler(string msg) {
                 msg_socket.send(member_list[it->first].ip.c_str(), backup_msg.c_str());
                 //plog("debug: sending \'%s\' to %d", backup_msg.c_str(), it->first);
             }
+            plog("join update member list: %s", membersToString().c_str());
+            plog("join update contact list: %s", contactsToString().c_str());
+            
         }
     } else if (msg[7] =='c') { /* A crash message */
         msg = msg.substr(13, msg.length());
@@ -55,14 +58,16 @@ void Daemon::updateHandler(string msg) {
             /* Have received this message before */
             return;
         } else {
+            plog(backup_msg);
             member_list.erase(tmp.id);
-            plog("update member list: %s", membersToString().c_str());
             long long ts = unixTimestamp();
             updateContact(ts);
             /* Broadcast update */
             for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
-                msg_socket.send(member_list[it->first].ip.c_str(), msg.c_str());
+                msg_socket.send(member_list[it->first].ip.c_str(), backup_msg.c_str());
             }
+            plog("crash update member list: %s", membersToString().c_str());
+            plog("crash update contact list: %s", contactsToString().c_str());
         }
     } else { /* A leave message */
         msg = msg.substr(13, msg.length());
@@ -71,14 +76,16 @@ void Daemon::updateHandler(string msg) {
             /* Have received this message before */
             return;
         } else {
+            plog(backup_msg);
             member_list.erase(tmp.id);
-            plog("update member list: %s", membersToString().c_str());
             long long ts = unixTimestamp();
             updateContact(ts);
             /* Broadcast update */
             for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
-                msg_socket.send(member_list[it->first].ip.c_str(), msg.c_str());
+                msg_socket.send(member_list[it->first].ip.c_str(), backup_msg.c_str());
             }
+            plog("leave update member list: %s", membersToString().c_str());
+            plog("leave update contact list: %s", contactsToString().c_str());
         }
     }
 }
