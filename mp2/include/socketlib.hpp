@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <ifaddrs.h>
 #include <string>
 
 #define BUFSIZE 2048
@@ -20,6 +21,7 @@ private:
     int serverFD, clientFD, port;
 public:
     UDPSocket(int port);
+    void setTimeout(int time);
     int send(const char* remoteIP, const char* msg);
     int recv(char* remoteIp, char* recvMsg);    
 };

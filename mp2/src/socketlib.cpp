@@ -57,3 +57,12 @@ int UDPSocket::recv(char * remoteIP, char * recvMsg) {
     recvMsg[recvlen] = '\0';
     return recvlen;
 }
+
+void UDPSocket::setTimeout(int time) {    
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = time;
+    if (setsockopt(serverFD, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+        perror("Error");
+    }
+}

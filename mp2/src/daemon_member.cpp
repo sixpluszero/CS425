@@ -46,7 +46,7 @@ void Daemon::updateContact(long long ts){
     }
     */
 
-    log("update contact %s", contactsToString().c_str());
+    plog("update contact list: %s", contactsToString().c_str());
 }
 
 int Daemon::newMember(char *remote_ip) {
@@ -58,7 +58,7 @@ int Daemon::newMember(char *remote_ip) {
             VMNode tmp(rip, ts, i);
             member_list[i] = tmp;
             remote_pos = i;
-            log("insert %s in %dth position", remote_ip, remote_pos);
+            plog("insert %s in %dth position", remote_ip, remote_pos);
             break;
         }
     }
@@ -81,7 +81,7 @@ void Daemon::setMemberList(string w) {
             break;
         }
     }
-    log("init member: %s", membersToString().c_str());
+    plog("init member: %s", membersToString().c_str());
 }
 
 string Daemon::membersToString(){
