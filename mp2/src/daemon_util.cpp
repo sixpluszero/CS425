@@ -70,3 +70,9 @@ void Daemon::setLogFile() {
     int vmid = stoi(self_ip.substr(self_ip.rfind('.') + 1, self_ip.length())) - 181;
     self_log = "server" + std::to_string(vmid) + ".log";
 }
+
+bool Daemon::dropMsg(){
+    int ans = rand() % 100;
+    if (ans < DROPRATE) return true;
+    return false;
+}

@@ -36,6 +36,28 @@ UDPSocket::UDPSocket(int _port) {
     printf("%d binding finished\n", port); 
 }
 
+UDPSocket::UDPSocket(int _port, bool _send) {
+    port = _port;
+
+    /* create client socket */
+
+    if ((clientFD = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
+		perror("cannot create client socket\n");
+    }
+
+    /* bind it to all local addresses and pick any port number */
+
+    memset((char *)&clientAddr, 0, sizeof(clientAddr));
+    clientAddr.sin_family = AF_INET;
+    clientAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    clientAddr.sin_port = htons(0);
+
+    if (bind(clientFD, (struct sockaddr *)&clientAddr, sizeof(clientAddr)) < 0) {
+        perror("bind client socket failed");
+    }
+    printf("%d binding finished\n", port); 
+}
+
 int UDPSocket::send(const char * remoteIP, const char * msg) {
     memset((char *) &sendAddr, 0, sizeof(sendAddr));
 	sendAddr.sin_family = AF_INET;

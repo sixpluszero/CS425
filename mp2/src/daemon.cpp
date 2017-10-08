@@ -1,9 +1,11 @@
 #include "daemon.hpp"
 using namespace std;
 
-Daemon::Daemon(int flag): msg_socket(UDPSocket(8888)), cmd_socket(UDPSocket(6666)){
+Daemon::Daemon(int flag): msg_socket(UDPSocket(8888)), cmd_socket(UDPSocket(6666)), out_socket(UDPSocket(7777, true)){
     member_list.clear();
     contact_list.clear();
+
+    srand (time(NULL));
     
     setSelfAddr();
     setLogFile();
@@ -61,22 +63,33 @@ void Daemon::join() {
     }
 }
 
-void Daemon::leave() {
-    plog("monitoring leave message");
+void Daemon::command() {
+    plog("monitoring command line message");
     while (leave_flag == false) {
         char buf[BUFSIZE];
         char rip[BUFSIZE];
         cmd_socket.recv(rip, buf);
-        string msg = "exit";
+        plog("[cmd debug] %s", buf);
+        string msg;
         switch(buf[0]){
             case 'l':
-                msg_socket.send(member_list[self_index].ip.c_str(), msg.c_str());
+                plog("[cmd debug] leave should happen");
+                //msg = "exit";
+                //msg_socket.send(member_list[self_index].ip.c_str(), msg.c_str());
                 for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
                     string info = "update,leave," + member_list[self_index].toString();
                     msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
                 }
                 leave_flag = true;
                 break;
+            case 'i':
+                msg = member_list[self_index].toString();
+                out_socket.send(rip, msg.c_str());
+                break;
+            case 'm':
+                msg = membersToString();
+                out_socket.send(rip, msg.c_str());
+                break;                
             default:
                 break;
         }
@@ -88,7 +101,7 @@ void Daemon::heartbeat() {
         usleep(HEARTBEAT);
         for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
             string info = "heartbeat";
-            msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
+            if (!dropMsg()) msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
         }
     }
     plog("module heartbeat exit");

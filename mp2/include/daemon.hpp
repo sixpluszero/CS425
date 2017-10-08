@@ -10,10 +10,11 @@
 #include "socketlib.hpp"
 #include "node.hpp"
 #define NODE 10
+#define DROPRATE 0
 #define INTRODUCER 5
-#define HEARTBEAT 250000 /* (1/1000000 sec) Period for heartbeat() to wakeup and scan */
+#define HEARTBEAT 400000 /* (1/1000000 sec) Period for heartbeat() to wakeup and scan */
 #define SCAN 500000 /* (1/1000000 sec) Period for timeout() to wakeup and scan */
-#define FAILURE 1000 /* (1/1000 sec) Time for timeout() to detect the failure */
+#define FAILURE 1300 /* (1/1000 sec) Time for timeout() to detect the failure */
 using namespace std;
 
 class Daemon{
@@ -21,6 +22,7 @@ private:
 	vector<string> known_hosts;
 	UDPSocket msg_socket;
 	UDPSocket cmd_socket; // Socket for command-line input
+	UDPSocket out_socket;
 	map<int, VMNode> member_list;
 	map<int, long long> contact_list;
 	string self_ip;
@@ -38,7 +40,7 @@ public:
  	void timeout(); // check whether its neighbors are down	
 	void heartbeat(); // send hb to contacts
 	void join(); // send join request to introducer, receive membership list
-	void leave(); // send leave message to contacts
+	void command(); // send leave message to contacts
 	void receive(); // listen to all messages endlessly
 	void start(); // initial work. Join & start receive
 	
@@ -57,6 +59,7 @@ public:
 	void plog(const char *fmt, ...);
 	void setSelfAddr();
 	void setLogFile();
+	bool dropMsg();
 
 	/* Receiver handler functions */
 	void joinHandler(char *remote_ip);

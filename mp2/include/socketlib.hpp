@@ -21,6 +21,7 @@ private:
     int serverFD, clientFD, port;
 public:
     UDPSocket(int port);
+    UDPSocket(int port, bool send);
     void setTimeout(int time);
     int send(const char* remoteIP, const char* msg);
     int recv(char* remoteIp, char* recvMsg);    
