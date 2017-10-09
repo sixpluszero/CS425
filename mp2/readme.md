@@ -15,13 +15,13 @@ To start all the nodes in the group, type `python start.py X Y`, and daemons on 
 ## Command line tool
 Suppose we login to VM X, we can perform the following commands.
 1. Crash a daemon
-    Simply type `pkill server`
+    * Simply type `pkill server`
 2. List membership of the daemon in this vm
-    python mp2/cmd.py member
+    * `python mp2/cmd.py member`
 3. List id of the daemon in this vm
-    python mp2/cmd.py id
+    * `python mp2/cmd.py id`
 4. Let the daemon in this vm to leave
-    python mp2/cmd.py leave
+    * `python mp2/cmd.py leave`
 5. Let the daemon in this vm rejoin
-    python mp2/cmd.py join
+    * `python mp2/cmd.py join`
 
