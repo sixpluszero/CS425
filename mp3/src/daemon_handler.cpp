@@ -1,16 +1,15 @@
 #include "daemon.hpp"
 
-
 void Daemon::joinHandler(char *remote_ip) {
-    //long long ts = unixTimestamp();    
+    //long long ts = unixTimestamp();
     int remote_pos = 0;
     
     remote_pos = newMember(remote_ip); /* update membership */
-    plog("join update member list: %s", membersToString().c_str());
-    plog("join update contact list: %s", contactsToString().c_str());
-
-    // [TODO] Master
-    if (master_list.size() <= 3) {
+    plog("insert update member list: %s", membersToString().c_str());
+    plog("insert update contact list: %s", contactsToString().c_str());
+    plog("insert update master list: %s", mastersToString().c_str());
+    /* Only handle initial coldstart state */
+    if (member_list.size() <= 3 && master_list.size() < 3) {
         master_list[remote_pos] = "Backup";
     }
 
@@ -21,12 +20,11 @@ void Daemon::joinHandler(char *remote_ip) {
     ret += ";" + mastersToString();
     msg_socket.send(remote_ip, ret.c_str());
 
-
     // Send update to neighbors;
     for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
         string info = "update,join," + member_list[remote_pos].toString();
         if (master_list.find(remote_pos) != master_list.end()) {
-            info = info + "," + std::to_string(remote_pos);
+            info = info + "," + master_list[remote_pos];
         }
         msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
        // printf("send update %s %s\n", member_list[it->first].ip.c_str(), info.c_str());
@@ -36,11 +34,11 @@ void Daemon::joinHandler(char *remote_ip) {
 
 void Daemon::updateHandler(string msg) {
     string backup_msg = msg;
-    //plog(msg);
+    plog(msg);
     if (msg[7] == 'j') { /* A join message */
         msg = msg.substr(12, msg.length());
         // If the new node is a master..
-        if (msg.find(',') != -1) {
+        if (msg.find(',') != std::string::npos) {
             msg = msg.substr(0, msg.find(','));
         }
         VMNode tmp(msg);
@@ -53,11 +51,11 @@ void Daemon::updateHandler(string msg) {
             member_list[tmp.id] = tmp;
             long long ts = unixTimestamp();
             updateContact(ts);
-            if (backup_msg.find('Primary') != -1) {
-                master_list[tmp.id] = 'Primary';
+            if (backup_msg.find("Primary") != std::string::npos) {
+                master_list[tmp.id] = "Primary";
             }
-            if (backup_msg.find('Backup') != -1) {
-                master_list[tmp.id] = 'Backup';
+            if (backup_msg.find("Backup") != std::string::npos) {
+                master_list[tmp.id] = "Backup";
             }
 
             /* Broadcast update */
@@ -69,6 +67,33 @@ void Daemon::updateHandler(string msg) {
             plog("join update contact list: %s", contactsToString().c_str());
             plog("join update master list: %s", mastersToString().c_str());
         }
+    } else if (msg[7] =='m') { /* A master assignment message */
+        plog("debug master assignment original message %s", msg.c_str());
+        msg = msg.substr(14, msg.length());
+        int idx = msg.find(",");
+        int tmp = stoi(msg.substr(0, idx));
+        string new_role = msg.substr(idx+1, msg.length());
+        plog("debug master assignment message %d %s", tmp, new_role.c_str());
+        if ((master_list.find(tmp) != master_list.end()) && (master_list[tmp] == new_role)) { /* Have received this message before */
+            return;
+        } else {
+            plog(backup_msg);
+            master_list[tmp] = new_role;
+            /* Broadcast update */
+            for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
+                msg_socket.send(member_list[it->first].ip.c_str(), backup_msg.c_str());
+            }
+            plog("master update master list: %s", mastersToString().c_str());
+            
+            /* Master assignment about this node */
+            if (idx == self_index) {
+                if (isPrimary()) {
+                    role = "Primary";
+                } else {
+                    role = "Backup";
+                }
+            }
+        }
     } else if (msg[7] =='c') { /* A crash message */
         msg = msg.substr(13, msg.length());
         VMNode tmp(msg);
@@ -78,6 +103,7 @@ void Daemon::updateHandler(string msg) {
         } else {
             plog(backup_msg);
             member_list.erase(tmp.id);
+            master_list.erase(tmp.id);
             long long ts = unixTimestamp();
             updateContact(ts);
             /* Broadcast update */
@@ -86,8 +112,21 @@ void Daemon::updateHandler(string msg) {
             }
             plog("crash update member list: %s", membersToString().c_str());
             plog("crash update contact list: %s", contactsToString().c_str());
+            plog("crash update master list: %s", mastersToString().c_str());
+
+            if (isMaster()){
+                if (isPrimary()){
+                    if (member_list.size() >= 3 && master_list.size() < 3) {
+                        assignBackup(3-master_list.size());
+                    }
+                } else {
+                    if (!hasPrimary() && isFirstBackup()) {
+                        upgradeBackup();
+                    }
+                }
+            }
         }
-    } else { /* A leave message */
+    }  else { /* A leave message */
         msg = msg.substr(13, msg.length());
         VMNode tmp(msg);
         if (member_list.find(tmp.id) == member_list.end()) {
@@ -96,6 +135,7 @@ void Daemon::updateHandler(string msg) {
         } else {
             plog(backup_msg);
             member_list.erase(tmp.id);
+            master_list.erase(tmp.id);
             long long ts = unixTimestamp();
             updateContact(ts);
             /* Broadcast update */
@@ -104,6 +144,7 @@ void Daemon::updateHandler(string msg) {
             }
             plog("leave update member list: %s", membersToString().c_str());
             plog("leave update contact list: %s", contactsToString().c_str());
+            plog("leave update master list: %s", mastersToString().c_str());
         }
     }
 }

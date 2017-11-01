@@ -12,7 +12,6 @@ Daemon::Daemon(int flag): msg_socket(UDPSocket((BASEPORT+1))), cmd_socket(UDPSoc
     for (int i = 0; i < INTRODUCER; i++) {
         string contact = "172.22.154." + std::to_string(182+i);
         known_hosts.push_back(contact);
-        plog("%s is a known introducer", contact.c_str());
     }
 
     join();
@@ -26,10 +25,11 @@ void Daemon::join() {
         for (int i = 0; i < INTRODUCER; i++) {
             if (strcmp(known_hosts[i].c_str(), self_ip.c_str()) == 0) continue;
             msg_socket.send(known_hosts[i].c_str(), "join");
+            plog("send join to %s", known_hosts[i].c_str());
     
             char buf[BUFSIZE], rip[100];
             int recvBytes = 0;
-            msg_socket.setTimeout(500000);
+            msg_socket.setTimeout(100000);
             recvBytes = msg_socket.recv(rip, buf);
             //plog("introducer %s return %d bytes", known_hosts[i].c_str(), recvBytes);
             if (recvBytes <= 0) {
@@ -38,17 +38,28 @@ void Daemon::join() {
             }
             msg_socket.setTimeout(0);
             string w = buf;
+            //plog("initial join receive: %s", w.c_str());
             if (w[0] != 'r') continue;
             idx = w.find(";");
             w = w.substr(idx + 1, w.length());
-            idx = w.find(",");
-            self_index = stoi(w.substr(0, idx));
             idx = w.find(";");
+            self_index = stoi(w.substr(0, idx));
+            w = w.substr(idx + 1, w.length());
+            idx = w.find(";");
+            plog("initial join setting member: %s", w.substr(0, idx).c_str());
             setMemberList(w.substr(0, idx));
             long long ts = unixTimestamp();
             updateContact(ts);
             w = w.substr(idx + 1, w.length());
+            plog("initial join setting master: %s", w.c_str());
             setMasterList(w);
+            if (isPrimary()){
+                role = "Primary";
+            } else if (isBackup()) {
+                role = "Backup";
+            } else {
+                role = "Data";
+            }
             join = true;
             break;
         }
@@ -61,6 +72,9 @@ void Daemon::join() {
         member_list[self_index] = tmp;
         master_list.clear();
         master_list[1] = "Primary";
+        role = "Primary";
+        join = true;
+        break;
     }
 }
 
@@ -119,13 +133,13 @@ void Daemon::timeout() {
             if ((ts - it->second) > FAILURE) {
                 plog("crash %d(%s/%lld) failed (latest %lld)", it->first, member_list[it->first].ip.c_str(), member_list[it->first].join_timestamp, it->second);
                 to_remove.push_back(it->first);
-                
             }
         }
         for (auto it = to_remove.begin(); it != to_remove.end(); it++) {
             int pos = *it;
             del_node.push_back(member_list[pos].toString());
             member_list.erase(pos);
+            master_list.erase(pos);
             updateContact(ts);
         }
 
@@ -135,10 +149,24 @@ void Daemon::timeout() {
                 msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
             }                
         }
+        
+        if (isMaster()){
+            if (isPrimary()){
+                if (member_list.size() >= 3 && master_list.size() < 3) {
+                    assignBackup(3-master_list.size());
+                }
+            } else {
+                if (!hasPrimary() && isFirstBackup()) {
+                    upgradeBackup();
+                }
+            }
+        }
 
         if (to_remove.size() > 0) {
-            plog("crash update member list: %s", membersToString().c_str());
-            plog("crash update contact list: %s", contactsToString().c_str());
+            plog("detect crash update member list: %s", membersToString().c_str());
+            plog("detect crash update contact list: %s", contactsToString().c_str());
+            plog("detect crash update master list: %s", mastersToString().c_str());
+
         }
     }
     plog("module timeout exit");
@@ -148,25 +176,22 @@ void Daemon::receive() {
     while (leave_flag == false) {
         char buf[BUFSIZE];
         char rip[BUFSIZE];
-        msg_socket.recv(rip, buf);
-        
-        /* 
-            [TODO] Process request in new thread
-            process()
-        */
+        int recv = msg_socket.recv(rip, buf);
 
-        switch(buf[0]){
-            case 'j': /* Join */
-                joinHandler(rip);
-                break;
-            case 'h': /* Heartbeat */
-                heartbeatHandler(rip);
-                break;
-            case 'u': /* Membership */
-                updateHandler(string(buf));
-                break;
-            default:
-                break;
+        if (recv > 0) {
+            switch(buf[0]){
+                case 'j': /* Join */
+                    joinHandler(rip);
+                    break;
+                case 'h': /* Heartbeat */
+                    heartbeatHandler(rip);
+                    break;
+                case 'u': /* Membership */
+                    updateHandler(string(buf));
+                    break;
+                default:
+                    break;
+            }
         }
     }
     plog("module receive exit");

@@ -47,9 +47,18 @@ public:
 	void heartbeat(); // send hb to contacts
 	void join(); // send join request to introducer, receive membership list
 	void command(); // send leave message to contacts
-	void receive(); // listen to all messages endlessly
-	void start(); // initial work. Join & start receive
+	void receive(); // listen to all membership related messages
+	void master(); // handle master events
 	
+	/* Master functions */
+	bool isPrimary();
+	bool isBackup();
+	bool isMaster();
+	bool hasPrimary();
+	bool isFirstBackup();
+	void assignBackup(int num);
+	void upgradeBackup();
+
 	/* Membership functions */
 	int newMember(char * remote_ip);
 	void updateContact(long long ts);

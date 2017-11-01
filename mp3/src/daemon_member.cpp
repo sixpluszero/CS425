@@ -125,7 +125,7 @@ string Daemon::mastersToString(){
     string ans = "";
     ans += std::to_string(master_list.size());
     for (auto it = master_list.begin(); it != master_list.end(); it++) {
-        ans += ", " + std::to_string(it->first) + "/" + it->second;
+        ans += "," + std::to_string(it->first) + "/" + it->second;
     }
     return ans;
 }
