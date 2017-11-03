@@ -76,3 +76,39 @@ bool Daemon::dropMsg(){
     if (ans < DROPRATE) return true;
     return false;
 }
+
+void Daemon::tcpSendString(TCPSocket *sock, string in) {
+    string lenStr = std::to_string(in.length());
+    for (int i = 0; i < 10 - int(lenStr.length()); i++) in = " " + in;
+    in = lenStr + in;    
+    sock->send(in.c_str(), in.length());
+}
+
+string Daemon::tcpRecvString(TCPSocket *sock) {
+    string result;
+    int RCVBUFSIZE = 2000;
+    char recvBuffer[RCVBUFSIZE + 1];
+    int totalBytes = 100000;
+    int bytesReceived = 0;
+    int totalBytesReceived = 0;
+    while (totalBytesReceived < totalBytes) {
+        if ((bytesReceived = (sock->recv(recvBuffer, RCVBUFSIZE))) <= 0) {
+            cerr << "Unable to read";
+            exit(1);
+        }
+        recvBuffer[bytesReceived] = '\0';
+        if (totalBytesReceived == 0) {
+            totalBytes = stoi(string(recvBuffer).substr(0, 10)) + 10;
+            result += string(recvBuffer).substr(10, bytesReceived);
+        } else {
+            result += string(recvBuffer);
+        }
+        totalBytesReceived += bytesReceived;
+    }
+    return result;
+}
+
+bool Daemon::prefixMatch(string org, string patt){
+    if (org.length() < patt.length()) return false;
+    return org.substr(0, patt.length()) == patt;
+}

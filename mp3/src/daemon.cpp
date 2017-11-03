@@ -1,23 +1,6 @@
 #include "daemon.hpp"
 using namespace std;
 
-Daemon::Daemon(int flag): msg_socket(UDPSocket((BASEPORT+1))), cmd_socket(UDPSocket((BASEPORT+2))), out_socket(UDPSocket((BASEPORT), true)), file_socket(UDPSocket((BASEPORT+3))){
-    member_list.clear();
-    contact_list.clear();
-
-    srand(time(NULL));
-    setSelfAddr();
-    setLogFile();
-
-    for (int i = 0; i < INTRODUCER; i++) {
-        string contact = "172.22.154." + std::to_string(182+i);
-        known_hosts.push_back(contact);
-    }
-
-    join();
-
-}
-
 void Daemon::join() {
     int idx;
     bool join = false;
@@ -73,6 +56,12 @@ void Daemon::join() {
         master_list.clear();
         master_list[1] = "Primary";
         role = "Primary";
+        /* Below is test message */
+        newFileMappingLocation("abc.def/1/666666666");
+        newFileMappingLocation("abc.def/2/666666666");
+        newFileMappingLocation("abc.def/3/666666666");
+        newFileMappingLocation("abcd.ef/1/666666666");
+        plog("testing %s", fileMappingToString().c_str());
         join = true;
         break;
     }
@@ -151,6 +140,11 @@ void Daemon::timeout() {
         }
         
         if (isMaster()){
+            for (auto it = to_remove.begin(); it != to_remove.end(); it++) {
+                clearNodeFile(*it);
+                plog("after timeout clear: %s", fileMappingToString().c_str());    
+            }
+            
             if (isPrimary()){
                 if (member_list.size() >= 3 && master_list.size() < 3) {
                     assignBackup(3-master_list.size());
@@ -195,4 +189,57 @@ void Daemon::receive() {
         }
     }
     plog("module receive exit");
+}
+
+void Daemon::channel() {
+    while (leave_flag == false) {
+        for (;;) {
+            TCPSocket *sock = node_socket.accept();
+            std::thread msg_t(&Daemon::nodeMsgHandler, this, sock);
+            msg_t.detach();
+        }
+    }
+}
+
+void Daemon::nodeMsgHandler(TCPSocket *sock) {
+    string info = tcpRecvString(sock);
+    plog("channel recv: %s", info.c_str());
+    if (prefixMatch(info, "newfmap")) {
+        newFileMapping(info.substr(8, info.length()));
+        plog("synced file mapping: %s", fileMappingToString().c_str());
+        tcpSendString(sock, "ack");
+    } else if (prefixMatch(info, "newfloc")) {
+        newFileMappingLocation(info.substr(8, info.length()));
+        plog("updated file mapping: %s", fileMappingToString().c_str());
+    } else if (prefixMatch(info, "masterput")) {
+        dataPut(sock, info.substr(10, info.length()));
+    } else if (prefixMatch(info, "clientput")) {
+        clientPut(sock, info.substr(10, info.length()));
+    }
+    
+    delete sock;
+}
+
+
+Daemon::Daemon(int flag): 
+out_socket(UDPSocket((BASEPORT), true)),    
+msg_socket(UDPSocket((BASEPORT+1))), 
+cmd_socket(UDPSocket((BASEPORT+2))), 
+node_socket(BASEPORT+3), 
+file_socket(BASEPORT+4){
+    system("rm ./mp3/files/*");
+    member_list.clear();
+    contact_list.clear();
+
+    srand(time(NULL));
+    setSelfAddr();
+    setLogFile();
+
+    for (int i = 0; i < INTRODUCER; i++) {
+        string contact = "172.22.154." + std::to_string(182+i);
+        known_hosts.push_back(contact);
+    }
+
+    join();
+
 }

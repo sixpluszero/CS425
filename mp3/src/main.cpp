@@ -10,8 +10,10 @@ int main(int argc, char* argv[]){
     std::thread hb_t (&Daemon::heartbeat, &myServer);
     std::thread to_t (&Daemon::timeout, &myServer);
     std::thread cmd_t (&Daemon::command, &myServer);
+    std::thread nc_t (&Daemon::channel, &myServer);
     recv_t.join();
     hb_t.join();
     to_t.join();
     cmd_t.join();
+    nc_t.join();
 }

@@ -29,7 +29,12 @@ void Daemon::joinHandler(char *remote_ip) {
         msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
        // printf("send update %s %s\n", member_list[it->first].ip.c_str(), info.c_str());
     }
-
+    
+    if (master_list.find(remote_pos) != master_list.end()) {
+        TCPSocket sock(string(remote_ip), BASEPORT+3);
+        tcpSendString(&sock, "newfmap;"+fileMappingToString());
+        //plog("master recv: %s", tcpRecvString(&sock).c_str());
+    }
 }
 
 void Daemon::updateHandler(string msg) {
@@ -68,12 +73,12 @@ void Daemon::updateHandler(string msg) {
             plog("join update master list: %s", mastersToString().c_str());
         }
     } else if (msg[7] =='m') { /* A master assignment message */
-        plog("debug master assignment original message %s", msg.c_str());
+        //plog("debug master assignment original message %s", msg.c_str());
         msg = msg.substr(14, msg.length());
         int idx = msg.find(",");
         int tmp = stoi(msg.substr(0, idx));
         string new_role = msg.substr(idx+1, msg.length());
-        plog("debug master assignment message %d %s", tmp, new_role.c_str());
+        //plog("debug master assignment message %d %s", tmp, new_role.c_str());
         if ((master_list.find(tmp) != master_list.end()) && (master_list[tmp] == new_role)) { /* Have received this message before */
             return;
         } else {
@@ -101,7 +106,7 @@ void Daemon::updateHandler(string msg) {
             /* Have received this message before */
             return;
         } else {
-            plog(backup_msg);
+            plog("hanlding: %s", backup_msg.c_str());
             member_list.erase(tmp.id);
             master_list.erase(tmp.id);
             long long ts = unixTimestamp();
@@ -115,7 +120,11 @@ void Daemon::updateHandler(string msg) {
             plog("crash update master list: %s", mastersToString().c_str());
 
             if (isMaster()){
+                clearNodeFile(tmp.id);
+                plog("after failure clear: %s", fileMappingToString().c_str());
                 if (isPrimary()){
+                    clearNodeFile(tmp.id);
+                    plog("after failure clear: %s", fileMappingToString().c_str());
                     if (member_list.size() >= 3 && master_list.size() < 3) {
                         assignBackup(3-master_list.size());
                     }
@@ -133,7 +142,7 @@ void Daemon::updateHandler(string msg) {
             /* Have received this message before */
             return;
         } else {
-            plog(backup_msg);
+            plog("hanlding: %s", backup_msg.c_str());
             member_list.erase(tmp.id);
             master_list.erase(tmp.id);
             long long ts = unixTimestamp();
@@ -145,6 +154,20 @@ void Daemon::updateHandler(string msg) {
             plog("leave update member list: %s", membersToString().c_str());
             plog("leave update contact list: %s", contactsToString().c_str());
             plog("leave update master list: %s", mastersToString().c_str());
+            
+            if (isMaster()){
+                clearNodeFile(tmp.id);
+                plog("after failure clear: %s", fileMappingToString().c_str());
+                if (isPrimary()){
+                    if (member_list.size() >= 3 && master_list.size() < 3) {
+                        assignBackup(3-master_list.size());
+                    }
+                } else {
+                    if (!hasPrimary() && isFirstBackup()) {
+                        upgradeBackup();
+                    }
+                }
+            }
         }
     }
 }

@@ -6,15 +6,17 @@
 #include <ctime>
 #include <string>
 #include <sys/time.h>
+#include <iostream>
 #include <stdarg.h>
 #include "socketlib.hpp"
+#include "tcpsocket.hpp"
 #include "node.hpp"
 #include "config.hpp"
 #define NODE 10
 #define DROPRATE 0
 #define INTRODUCER 10
 #define HEARTBEAT 200000 /* (1/1000000 sec) Period for heartbeat() to wakeup and scan */
-#define SCAN 500000 /* (1/1000000 sec) Period for timeout() to wakeup and scan */
+#define SCAN 1000000 /* (1/1000000 sec) Period for timeout() to wakeup and scan */
 #define FAILURE 1500 /* (1/1000 sec) Time for timeout() to detect the failure */
 
 using namespace std;
@@ -22,10 +24,11 @@ using namespace std;
 class Daemon{
 private:
 	vector<string> known_hosts;
+	UDPSocket out_socket; // For sending message to client ONLY
 	UDPSocket msg_socket; // Internal membership message
-	UDPSocket cmd_socket; // Socket for command-line input
-	UDPSocket out_socket; // Only for sending message to client
-	UDPSocket file_socket; 
+	UDPSocket cmd_socket; // For client commands
+	TCPServerSocket node_socket; // For file system realted communication
+	TCPServerSocket file_socket; // For file transmission?
 	map<int, VMNode> member_list;
 	map<int, long long> contact_list;
 	string self_ip;
@@ -35,9 +38,9 @@ private:
 	long long local_timestamp;
 	mutex member_lock;
 	mutex log_lock;
-	// MP3
 	string role;
 	map<int, string> master_list;
+	map<string, map<int, long long> > file_location;
 public:
 	/* Init function */
 	Daemon(int flag);
@@ -48,7 +51,7 @@ public:
 	void join(); // send join request to introducer, receive membership list
 	void command(); // send leave message to contacts
 	void receive(); // listen to all membership related messages
-	void master(); // handle master events
+	void channel(); // handle master events
 	
 	/* Master functions */
 	bool isPrimary();
@@ -58,6 +61,19 @@ public:
 	bool isFirstBackup();
 	void assignBackup(int num);
 	void upgradeBackup();
+
+	/* File functions */
+	void clearNodeFile(int id);
+	void initFileMapping();
+	string fileMappingToString();
+	void newFileMapping(string input);
+	void newFileMappingLocation(string input);
+	bool hasFile(string fname);
+	int replicaCount(string fname);
+	long long fileLatestTime(string fanme);
+	void clientPut(TCPSocket *sock, string fname);
+	void saveFile(string content, string fname);
+	void dataPut(TCPSocket *sock, string fname);
 
 	/* Membership functions */
 	int newMember(char * remote_ip);
@@ -77,9 +93,13 @@ public:
 	void setSelfAddr();
 	void setLogFile();
 	bool dropMsg();
+	void tcpSendString(TCPSocket *sock, string in);
+	string tcpRecvString(TCPSocket *sock);
+	bool prefixMatch(string org, string patt);
 
 	/* Receiver handler functions */
 	void joinHandler(char *remote_ip);
 	void updateHandler(string msg);
 	void heartbeatHandler(char *remote_ip);
+	void nodeMsgHandler(TCPSocket *sock);
 };

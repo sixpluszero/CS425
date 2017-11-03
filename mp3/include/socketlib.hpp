@@ -25,8 +25,4 @@ public:
     int send(const char* remoteIP, const char* msg);
     int recv(char* remoteIp, char* recvMsg);    
 };
-
-
-
-
 #endif

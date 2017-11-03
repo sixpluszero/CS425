@@ -1,6 +1,7 @@
 import os
 import sys
 import mp_config
+import time
 USER = mp_config.USER
 
 def start(id):
@@ -12,6 +13,7 @@ assert(len(sys.argv) == 3 or len(sys.argv) == 1)
 if (len(sys.argv) == 3):
     for vid in range(int(sys.argv[1]), int(sys.argv[2])+1):
         start(vid)
+        time.sleep(1)
 else:
     for vid in range(1, 10+1):
         start(vid)
