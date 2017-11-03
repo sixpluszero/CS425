@@ -14,6 +14,8 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
             } else {
                 plog("User accept file update");
             }
+        } else {
+            tcpSendString(sock, "ack");
         }
     } else {
         tcpSendString(sock, "ack");
@@ -29,13 +31,10 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
 
         /* Assuming no failure */
         TCPSocket sock_w(member_list[it->first].ip, BASEPORT+3);
-        plog("test0: connected");        
         tcpSendString(&sock_w, "masterput;"+fname);
         string ack = tcpRecvString(&sock_w);
-        plog("test1: %s", ack.c_str());
         tcpSendString(&sock_w, content);
         ack = tcpRecvString(&sock_w);
-        plog("test2: %s", ack.c_str());
 
         string update = fname + "/" + std::to_string(it->first) + "/" + std::to_string(unixTimestamp());
         newFileMappingLocation(update);
@@ -64,9 +63,7 @@ void Daemon::saveFile(string content, string fname){
 }
 
 void Daemon::dataPut(TCPSocket *sock, string fname) {
-    plog("in dataPut");
     tcpSendString(sock, "ack");
-    plog("sent first ack");
     string content = tcpRecvString(sock);
     plog("receive replication file %s(%d)", fname.c_str(), content.length());
     saveFile(content, fname);

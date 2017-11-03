@@ -8,8 +8,8 @@ READBUF = 512
 TCP_IP = '172.22.154.182'
 TCP_PORT = (mp_config.BASEPORT + 3)
 BUFFER_SIZE = 1024
-MESSAGE = "clientput;rtest.py"
-FNAME = "./src/daemon.cpp"
+MESSAGE = "clientput;rfile2.py"
+FNAME = "/Users/sixpluszero/sentences-100.tsv"
 
 def send_file(soc, fname):
     fsize = os.stat(fname).st_size
@@ -24,7 +24,7 @@ def send_file(soc, fname):
             else:
                 soc.send(substr)
                 total_send += len(substr)
-        print total_send
+        print total_send - 10
 
 def send_pack(soc, s):
     w = str(len(s))
@@ -55,6 +55,7 @@ s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((TCP_IP, TCP_PORT))
 send_pack(s, MESSAGE)
 data = recv_pack(s)
+print data
 if (data != "ack"):
     uin = raw_input("Please confirm if you want to go on: Y/n\n")
     if (uin in ["Y", "Yes", "y", "yes"]):
@@ -66,7 +67,10 @@ if (data != "ack"):
         send_pack(s, "No")
         s.close()
 else:
+    print "sending file"
     send_file(s, FNAME)
+    print "file sent"
     data = recv_pack(s)
+    print "write succeed"
     s.close()
     print data

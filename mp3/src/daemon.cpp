@@ -57,11 +57,11 @@ void Daemon::join() {
         master_list[1] = "Primary";
         role = "Primary";
         /* Below is test message */
-        newFileMappingLocation("abc.def/1/666666666");
-        newFileMappingLocation("abc.def/2/666666666");
-        newFileMappingLocation("abc.def/3/666666666");
-        newFileMappingLocation("abcd.ef/1/666666666");
-        plog("testing %s", fileMappingToString().c_str());
+        //newFileMappingLocation("abc.def/1/666666666");
+        //newFileMappingLocation("abc.def/2/666666666");
+        //newFileMappingLocation("abc.def/3/666666666");
+        //newFileMappingLocation("abcd.ef/1/666666666");
+        //plog("testing %s", fileMappingToString().c_str());
         join = true;
         break;
     }

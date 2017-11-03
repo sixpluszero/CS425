@@ -5,9 +5,7 @@ void Daemon::joinHandler(char *remote_ip) {
     int remote_pos = 0;
     
     remote_pos = newMember(remote_ip); /* update membership */
-    plog("insert update member list: %s", membersToString().c_str());
-    plog("insert update contact list: %s", contactsToString().c_str());
-    plog("insert update master list: %s", mastersToString().c_str());
+
     /* Only handle initial coldstart state */
     if (member_list.size() <= 3 && master_list.size() < 3) {
         master_list[remote_pos] = "Backup";
@@ -35,6 +33,9 @@ void Daemon::joinHandler(char *remote_ip) {
         tcpSendString(&sock, "newfmap;"+fileMappingToString());
         //plog("master recv: %s", tcpRecvString(&sock).c_str());
     }
+    plog("insert update member list: %s", membersToString().c_str());
+    plog("insert update contact list: %s", contactsToString().c_str());
+    plog("insert update master list: %s", mastersToString().c_str());
 }
 
 void Daemon::updateHandler(string msg) {
