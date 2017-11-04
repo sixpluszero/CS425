@@ -1,5 +1,6 @@
 #include "daemon.hpp"
 
+/* Master: Client put */
 void Daemon::clientPut(TCPSocket *sock, string fname) {
     if (role != "Primary") return;
     if (hasFile(fname)) { /* We are going to do an update */
@@ -21,7 +22,7 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
         tcpSendString(sock, "ack");
     }
     string content = tcpRecvString(sock);
-    plog("receive file %s(%d)", fname.c_str(), content.length());
+    plog("master receive file %s(%d)", fname.c_str(), content.length());
 
     //saveFile(content, fname);
     /* This is super slow */
@@ -31,7 +32,7 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
 
         /* Assuming no failure */
         TCPSocket sock_w(member_list[it->first].ip, BASEPORT+3);
-        tcpSendString(&sock_w, "masterput;"+fname);
+        tcpSendString(&sock_w, "fileput;"+fname);
         string ack = tcpRecvString(&sock_w);
         tcpSendString(&sock_w, content);
         ack = tcpRecvString(&sock_w);
@@ -55,6 +56,26 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
     plog("updated file mapping: %s", fileMappingToString().c_str());
 }
 
+void Daemon::clientGet(TCPSocket *sock, string fname){
+    if (role != "Primary") return;
+    if (hasFile(fname)) { 
+        tcpSendString(sock, "ack");
+        for (auto it = file_location[fname].begin(); it != file_location[fname].end(); it++) {
+            TCPSocket sock_w(member_list[it->first].ip, BASEPORT+3);
+            tcpSendString(&sock_w, "fileget;"+fname);
+            string content = tcpRecvString(&sock_w);         
+            tcpSendString(sock, content);
+            break;
+        }
+        return;
+    } else {
+        tcpSendString(sock, "file not exists");
+        return;
+    }
+
+}
+
+
 void Daemon::saveFile(string content, string fname){
     string lfname = "./mp3/files/"+fname;
     FILE *fp = fopen(lfname.c_str(),"w");
@@ -62,10 +83,44 @@ void Daemon::saveFile(string content, string fname){
     fclose(fp);
 }
 
-void Daemon::dataPut(TCPSocket *sock, string fname) {
+/* Response to the data saving request */
+void Daemon::dataRecv(TCPSocket *sock, string fname) {
     tcpSendString(sock, "ack");
     string content = tcpRecvString(sock);
     plog("receive replication file %s(%d)", fname.c_str(), content.length());
     saveFile(content, fname);
     tcpSendString(sock, "finished");
+}
+
+/* Response to the data saving request */
+void Daemon::dataSend(TCPSocket *sock, string fname) {
+    //tcpSendString(sock, "ack");
+    //string content = tcpRecvString(sock);
+    //plog("receive replication file %s(%d)", fname.c_str(), content.length());
+    //saveFile(content, fname);
+    string content = readFile(fname);
+    tcpSendString(sock, content);
+}
+
+
+string Daemon::readFile(string fname) {
+    string lfname = "./mp3/files/"+fname;
+    std::ifstream ifs(lfname);
+    std::string content( (std::istreambuf_iterator<char>(ifs) ),
+                         (std::istreambuf_iterator<char>()    ) );
+
+    return content;
+}
+/* Response to the data saving request */
+void Daemon::dataPut(TCPSocket *sock, string input) {
+    int dst_node = stoi(input.substr(0, input.find("/")));
+    string fname = input.substr(input.find("/")+1, input.length());
+    string content = readFile(fname);
+    TCPSocket sock_w(member_list[dst_node].ip, BASEPORT+3);
+    tcpSendString(&sock_w, "fileput;"+fname);
+    string ack = tcpRecvString(&sock_w);
+    tcpSendString(&sock_w, content);
+    ack = tcpRecvString(&sock_w);
+    // if ack...
+    tcpSendString(sock, "success");
 }

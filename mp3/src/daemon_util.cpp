@@ -86,9 +86,9 @@ void Daemon::tcpSendString(TCPSocket *sock, string in) {
 
 string Daemon::tcpRecvString(TCPSocket *sock) {
     string result;
-    int RCVBUFSIZE = 2000;
+    int RCVBUFSIZE = 5000;
     char recvBuffer[RCVBUFSIZE + 1];
-    int totalBytes = 100000;
+    int totalBytes = 100000000;
     int bytesReceived = 0;
     int totalBytesReceived = 0;
     while (totalBytesReceived < totalBytes) {
@@ -99,12 +99,16 @@ string Daemon::tcpRecvString(TCPSocket *sock) {
         recvBuffer[bytesReceived] = '\0';
         if (totalBytesReceived == 0) {
             totalBytes = stoi(string(recvBuffer).substr(0, 10)) + 10;
+            //plog("total bytes should be %d", totalBytes);
             result += string(recvBuffer).substr(10, bytesReceived);
+            
         } else {
             result += string(recvBuffer);
+            //plog("debug %d %d %d", totalBytesReceived, bytesReceived, totalBytes);
         }
         totalBytesReceived += bytesReceived;
     }
+    plog("receive %d/%d", result.length(), totalBytes);
     return result;
 }
 

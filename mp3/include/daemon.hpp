@@ -12,6 +12,7 @@
 #include "tcpsocket.hpp"
 #include "node.hpp"
 #include "config.hpp"
+#include "fstream"
 #define NODE 10
 #define DROPRATE 0
 #define INTRODUCER 10
@@ -28,7 +29,6 @@ private:
 	UDPSocket msg_socket; // Internal membership message
 	UDPSocket cmd_socket; // For client commands
 	TCPServerSocket node_socket; // For file system realted communication
-	TCPServerSocket file_socket; // For file transmission?
 	map<int, VMNode> member_list;
 	map<int, long long> contact_list;
 	string self_ip;
@@ -61,6 +61,7 @@ public:
 	bool isFirstBackup();
 	void assignBackup(int num);
 	void upgradeBackup();
+	void fixReplication();
 
 	/* File functions */
 	void clearNodeFile(int id);
@@ -71,9 +72,13 @@ public:
 	bool hasFile(string fname);
 	int replicaCount(string fname);
 	long long fileLatestTime(string fanme);
-	void clientPut(TCPSocket *sock, string fname);
 	void saveFile(string content, string fname);
-	void dataPut(TCPSocket *sock, string fname);
+	string readFile(string fname);
+	void dataRecv(TCPSocket *sock, string fname);
+	void dataSend(TCPSocket *sock, string fname);
+	void dataPut(TCPSocket *sock, string input);
+	void clientPut(TCPSocket *sock, string fname);
+	void clientGet(TCPSocket *sock, string fname);	
 
 	/* Membership functions */
 	int newMember(char * remote_ip);

@@ -67,19 +67,6 @@ static void fillAddr(const string &address, unsigned short port,
 // Socket Code
 
 Socket::Socket(int type, int protocol) throw(SocketException) {
-  #ifdef WIN32
-    if (!initialized) {
-      WORD wVersionRequested;
-      WSADATA wsaData;
-
-      wVersionRequested = MAKEWORD(2, 0);              // Request WinSock v2.0
-      if (WSAStartup(wVersionRequested, &wsaData) != 0) {  // Load WinSock DLL
-        throw SocketException("Unable to load WinSock DLL");
-      }
-      initialized = true;
-    }
-  #endif
-
   // Make a new socket
   if ((sockDesc = socket(PF_INET, type, protocol)) < 0) {
     throw SocketException("Socket creation failed (socket())", true);

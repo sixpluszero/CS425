@@ -129,9 +129,15 @@ void Daemon::updateHandler(string msg) {
                     if (member_list.size() >= 3 && master_list.size() < 3) {
                         assignBackup(3-master_list.size());
                     }
+                    
+                    std::thread fix_t(&Daemon::fixReplication, this);
+                    fix_t.detach();
+                    
                 } else {
                     if (!hasPrimary() && isFirstBackup()) {
                         upgradeBackup();
+                        std::thread fix_t(&Daemon::fixReplication, this);
+                        fix_t.detach();
                     }
                 }
             }

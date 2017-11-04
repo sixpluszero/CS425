@@ -149,9 +149,17 @@ void Daemon::timeout() {
                 if (member_list.size() >= 3 && master_list.size() < 3) {
                     assignBackup(3-master_list.size());
                 }
+                if (to_remove.size() > 0) {
+                    std::thread fix_t(&Daemon::fixReplication, this);
+                    fix_t.detach();
+                }
             } else {
                 if (!hasPrimary() && isFirstBackup()) {
                     upgradeBackup();
+                    if (to_remove.size() > 0) {
+                        std::thread fix_t(&Daemon::fixReplication, this);
+                        fix_t.detach();
+                    }    
                 }
             }
         }
@@ -201,6 +209,7 @@ void Daemon::channel() {
     }
 }
 
+/* Handle file related transmission */
 void Daemon::nodeMsgHandler(TCPSocket *sock) {
     string info = tcpRecvString(sock);
     plog("channel recv: %s", info.c_str());
@@ -211,10 +220,18 @@ void Daemon::nodeMsgHandler(TCPSocket *sock) {
     } else if (prefixMatch(info, "newfloc")) {
         newFileMappingLocation(info.substr(8, info.length()));
         plog("updated file mapping: %s", fileMappingToString().c_str());
-    } else if (prefixMatch(info, "masterput")) {
-        dataPut(sock, info.substr(10, info.length()));
+    } else if (prefixMatch(info, "fileput")) {
+        dataRecv(sock, info.substr(8, info.length()));
+    } else if (prefixMatch(info, "fileget")) {
+        dataSend(sock, info.substr(8, info.length()));
     } else if (prefixMatch(info, "clientput")) {
         clientPut(sock, info.substr(10, info.length()));
+    } else if (prefixMatch(info, "copy")) {
+        dataPut(sock, info.substr(5, info.length()));
+    } else if (prefixMatch(info, "clientget")) {
+        clientGet(sock, info.substr(10, info.length()));
+    } else {
+
     }
     
     delete sock;
@@ -225,8 +242,7 @@ Daemon::Daemon(int flag):
 out_socket(UDPSocket((BASEPORT), true)),    
 msg_socket(UDPSocket((BASEPORT+1))), 
 cmd_socket(UDPSocket((BASEPORT+2))), 
-node_socket(BASEPORT+3), 
-file_socket(BASEPORT+4){
+node_socket(BASEPORT+3){
     system("rm ./mp3/files/*");
     member_list.clear();
     contact_list.clear();
