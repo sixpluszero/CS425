@@ -31,18 +31,26 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
 
     /* This is super slow */
     /* [TODO] Refractor this area! */
-    int cnt = 0;
+
+    vector< int > cand;
     for (auto it = member_list.begin(); it != member_list.end(); it++) {
+        cand.push_back(it->first);
+    }
+    std::random_shuffle(cand.begin(), cand.end());
+
+    int cnt = 0;
+    for (auto it = cand.begin(); it != cand.end(); it++) {
+        int nid = *it; 
         string ack;
         /* Assuming no failure */
-        TCPSocket sock_w(member_list[it->first].ip, BASEPORT+3);
+        TCPSocket sock_w(member_list[nid].ip, BASEPORT+3);
         tcpSendString(&sock_w, "fileput;"+fname);
         ack = tcpRecvString(&sock_w);
         sendFile(&sock_w, tmp_file);
         ack = tcpRecvString(&sock_w);
         plog("response from replica server: %s", ack.c_str());
         if (ack == "success") {
-            string update = fname + "/" + std::to_string(it->first) + "/" + std::to_string(unixTimestamp());
+            string update = fname + "/" + std::to_string(nid) + "/" + std::to_string(unixTimestamp());
             newFileMappingLocation(update);
             /* Send */
             for (auto it = master_list.begin(); it != master_list.end(); it++) {
@@ -105,6 +113,28 @@ void Daemon::clientDel(TCPSocket *sock, string fname){
             tcpSendString(&sock_, "masterfiledel;"+fname);
         }
         tcpSendString(sock, "success");
+        return;
+    } else {
+        tcpSendString(sock, "file not exists");
+        return;        
+    }
+}
+
+void Daemon::clientList(TCPSocket *sock, string fname){
+    string ack;
+    if (role != "Primary"){
+        tcpSendString(sock, "rej");
+        return;
+    }
+    if (hasFile(fname)) {
+        string result;
+        for (auto it = file_location[fname].begin(); it != file_location[fname].end(); it++) {
+            if (result != "") result += ",";
+            result += member_list[it->first].ip;
+        }
+        result = "(" + result + ")";
+        tcpSendString(sock, result);
+        return;
     } else {
         tcpSendString(sock, "file not exists");
         return;        

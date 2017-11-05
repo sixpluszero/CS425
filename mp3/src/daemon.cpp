@@ -214,7 +214,7 @@ void Daemon::channel() {
     }
 }
 
-/* Handle file related transmission */
+/* Handles file related transmission protocol */
 void Daemon::nodeMsgHandler(TCPSocket *sock) {
     string info = tcpRecvString(sock);
     plog("channel recv: %s", info.c_str());
@@ -246,6 +246,8 @@ void Daemon::nodeMsgHandler(TCPSocket *sock) {
     } else if (prefixMatch(info, "filedel")) {
         string cmd = "rm ./mp3/files/"+info.substr(8, info.length());
         system(cmd.c_str());
+    } else if (prefixMatch(info, "clientlist")) {
+        clientList(sock, info.substr(11, info.length()));
     }
     
     delete sock;

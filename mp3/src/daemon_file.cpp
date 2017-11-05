@@ -46,11 +46,9 @@ void Daemon::recvFile(TCPSocket *sock, string fname) {
         if (totalBytesReceived == 0) {
             totalBytes = stoi(string(recvBuffer).substr(0, 10)) + 10;
             plog("file size is %d", totalBytes);
-            fwrite(recvBuffer , sizeof(char), bytesReceived-10, fp);
-            //fprintf(fp, "%s", recvBuffer+10);
+            fwrite(recvBuffer+10 , sizeof(char), bytesReceived-10, fp);
         } else {
             fwrite(recvBuffer , sizeof(char), bytesReceived, fp);
-            //fprintf(fp, "%s", recvBuffer);
         }
         totalBytesReceived += bytesReceived;
         //plog("debug %d/%d", totalBytesReceived, totalBytes);

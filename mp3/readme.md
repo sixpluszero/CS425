@@ -23,5 +23,4 @@ Suppose we login to VM X, we can perform the following commands.
 4. Let the daemon in this vm to leave
     * `python mp3/cmd.py leave`
 5. Let the daemon in this vm rejoin
-    * `python mp3/cmd.py join`
-
+    * `python mp3/cmd.

@@ -78,7 +78,8 @@ public:
 
 	void clientPut(TCPSocket *sock, string fname);
 	void clientGet(TCPSocket *sock, string fname);
-	void clientDel(TCPSocket *sock, string fname);	
+	void clientDel(TCPSocket *sock, string fname);
+	void clientList(TCPSocket *sock, string fname);
 
 
 	/* Membership functions */

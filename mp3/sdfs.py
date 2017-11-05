@@ -39,7 +39,7 @@ def recv_file(soc, fname):
     with open(fname, "wb") as fp:
         while total_recv < total_size:
             data = soc.recv(BUFFER_SIZE)
-            if (first):
+            if (first == True):
                 total_size = int(data[:10])
                 data = data[10:] 
                 first = False
@@ -66,13 +66,19 @@ def connect_master():
         UDP_IP = '172.22.154.' + str(182+i)
         RECV_PORT = 6002
         CMD_PORT = 6000
-        recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        recv_sock.bind((LOCALHOST, CMD_PORT))
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto("query", (UDP_IP, RECV_PORT))
-        data, _ = recv_sock.recvfrom(1024)
+        try:
+            recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            recv_sock.bind((LOCALHOST, CMD_PORT))        
+            recv_sock.settimeout(1)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.sendto("query", (UDP_IP, RECV_PORT))
+            data, _ = recv_sock.recvfrom(1024)
+        except:
+            recv_sock.close()
+            continue
         if (data == "yes"):
             return UDP_IP
+        recv_sock.close()
     return "fail"
 
 def TCPConnect(TCP_IP, TCP_PORT):
@@ -150,6 +156,18 @@ def main(args):
             print "File deleted"
         else:
             print "Delete error:", data
+        soc.close()
+    elif args[1] == "ls":
+        assert(len(args) == 3)
+        MESSAGE = "clientlist;" + args[2]
+        send_pack(soc, MESSAGE)
+        data = recv_pack(soc)
+        if (data == "file not exists"):
+            print "File not exist"
+        elif (data == "fail"):
+            print "Other error"
+        else:
+            print "File %s stores at %s" % (args[2], data)
         soc.close()
     else:
         print "command not recognized"
