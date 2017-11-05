@@ -14,7 +14,7 @@ def rcompile():
 def deploy(id):
     server = "%s@fa17-cs425-g59-%02d.cs.illinois.edu" % (USER, id)
     os.system("scp -r ../mp3 %s:~/" % (server))
-    os.system("ssh %s \' cd mp3; rm -f server.log; make clean; make \' " % (server))
+    os.system("ssh %s \' rm -f *.log; cd mp3; make clean; make \' " % (server))
     #os.system("ssh %s \'pkill -u %s server; mkdir mp3; mkdir mp3/files \'" % (server, USER))
     #os.system("scp ./rserv %s:~/mp3/server " % (server))
 
