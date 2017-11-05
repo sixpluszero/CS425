@@ -78,8 +78,6 @@ void Daemon::command() {
         switch(buf[0]){
             case 'l':
                 plog("[cmd debug] leave should happen");
-                //msg = "exit";
-                //msg_socket.send(member_list[self_index].ip.c_str(), msg.c_str());
                 for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
                     string info = "update,leave," + member_list[self_index].toString();
                     msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
@@ -93,7 +91,14 @@ void Daemon::command() {
             case 'm':
                 msg = membersToString();
                 out_socket.send(rip, msg.c_str());
-                break;                
+                break;
+            case 'q':
+                if (isPrimary()){
+                    msg = "yes";
+                } else {
+                    msg = "no";
+                }             
+                out_socket.send(rip, msg.c_str());
             default:
                 break;
         }
@@ -221,17 +226,26 @@ void Daemon::nodeMsgHandler(TCPSocket *sock) {
         newFileMappingLocation(info.substr(8, info.length()));
         plog("updated file mapping: %s", fileMappingToString().c_str());
     } else if (prefixMatch(info, "fileput")) {
-        dataRecv(sock, info.substr(8, info.length()));
+        string fname = "./mp3/files/" + info.substr(8, info.length());
+        tcpSendString(sock, "ack");
+        recvFile(sock, fname);
+        tcpSendString(sock, "success");
     } else if (prefixMatch(info, "fileget")) {
-        dataSend(sock, info.substr(8, info.length()));
+        string fname = "./mp3/files/" + info.substr(8, info.length());
+        sendFile(sock, fname);
     } else if (prefixMatch(info, "clientput")) {
         clientPut(sock, info.substr(10, info.length()));
     } else if (prefixMatch(info, "copy")) {
-        dataPut(sock, info.substr(5, info.length()));
-    } else if (prefixMatch(info, "clientget")) {
+        replicateFile(sock, info.substr(5, info.length()));
+    } else if (prefixMatch(info, "clientget")) { 
         clientGet(sock, info.substr(10, info.length()));
-    } else {
-
+    } else if (prefixMatch(info, "clientdel")) {
+        clientDel(sock, info.substr(10, info.length()));
+    } else if (prefixMatch(info, "masterfiledel")) {
+        file_location.erase(info.substr(14, info.length()));
+    } else if (prefixMatch(info, "filedel")) {
+        string cmd = "rm ./mp3/files/"+info.substr(8, info.length());
+        system(cmd.c_str());
     }
     
     delete sock;
@@ -244,6 +258,7 @@ msg_socket(UDPSocket((BASEPORT+1))),
 cmd_socket(UDPSocket((BASEPORT+2))), 
 node_socket(BASEPORT+3){
     system("rm ./mp3/files/*");
+    system("rm ./mp3/tmp/*");
     member_list.clear();
     contact_list.clear();
 

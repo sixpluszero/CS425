@@ -72,13 +72,14 @@ public:
 	bool hasFile(string fname);
 	int replicaCount(string fname);
 	long long fileLatestTime(string fanme);
-	void saveFile(string content, string fname);
-	string readFile(string fname);
-	void dataRecv(TCPSocket *sock, string fname);
-	void dataSend(TCPSocket *sock, string fname);
-	void dataPut(TCPSocket *sock, string input);
+	void replicateFile(TCPSocket *sock, string input);
+	void sendFile(TCPSocket *sock, string fname);
+	void recvFile(TCPSocket *sock, string fname);
+
 	void clientPut(TCPSocket *sock, string fname);
-	void clientGet(TCPSocket *sock, string fname);	
+	void clientGet(TCPSocket *sock, string fname);
+	void clientDel(TCPSocket *sock, string fname);	
+
 
 	/* Membership functions */
 	int newMember(char * remote_ip);

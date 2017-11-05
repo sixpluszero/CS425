@@ -99,16 +99,13 @@ string Daemon::tcpRecvString(TCPSocket *sock) {
         recvBuffer[bytesReceived] = '\0';
         if (totalBytesReceived == 0) {
             totalBytes = stoi(string(recvBuffer).substr(0, 10)) + 10;
-            //plog("total bytes should be %d", totalBytes);
             result += string(recvBuffer).substr(10, bytesReceived);
-            
         } else {
             result += string(recvBuffer);
-            //plog("debug %d %d %d", totalBytesReceived, bytesReceived, totalBytes);
         }
         totalBytesReceived += bytesReceived;
     }
-    plog("receive %d/%d", result.length(), totalBytes);
+    //plog("receive %d/%d", totalBytesReceived, totalBytes);
     return result;
 }
 

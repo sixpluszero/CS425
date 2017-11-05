@@ -1,126 +1,78 @@
 #include "daemon.hpp"
 
-/* Master: Client put */
-void Daemon::clientPut(TCPSocket *sock, string fname) {
-    if (role != "Primary") return;
-    if (hasFile(fname)) { /* We are going to do an update */
-        long long ots = fileLatestTime(fname);
-        long long nts = unixTimestamp();
-        if ((nts - ots) < 60 * 1000) {
-            tcpSendString(sock, "has old replica in last minute");
-            string cmd = tcpRecvString(sock);
-            if (cmd == "No"){
-                plog("User reject file update");
-                return;
-            } else {
-                plog("User accept file update");
-            }
+/* send file through TCP socket */
+void Daemon::sendFile(TCPSocket *sock, string fname) {
+    plog("sending file from %s", fname.c_str());
+    int TCPBUFSIZE = 4096;
+    int bytesRead;
+    FILE *fp = fopen(fname.c_str(), "rb");
+    fseek(fp, 0L, SEEK_END);
+    int sz = ftell(fp);
+    plog("send: %s file size: %d bytes", fname.c_str(), sz);
+    string lenStr = std::to_string(sz);
+    int it = 10 - lenStr.length();
+    for (int i = 0; i < it; i++) {
+        lenStr = lenStr + " ";
+    }
+    sock->send(lenStr.c_str(), lenStr.length());
+    fseek(fp, 0, 0);
+    int total = 0;
+    while (true) {
+        char buffer[TCPBUFSIZE + 100];
+        bytesRead = fread(buffer, 1, TCPBUFSIZE, fp);
+        buffer[bytesRead] = '\0';
+        total += bytesRead;
+        sock->send(buffer, bytesRead);
+        if (bytesRead < TCPBUFSIZE) break;
+    }
+    fclose(fp);
+} 
+
+void Daemon::recvFile(TCPSocket *sock, string fname) {
+    plog("receiving file to %s", fname.c_str());
+    int TCPBUFSIZE = 4096;
+    int totalBytes = 1000000;
+    int bytesReceived = 0;
+    int totalBytesReceived = 0;
+    FILE *fp = fopen(fname.c_str(), "wb");
+    if (fp == NULL) plog("fp is null");
+    while (totalBytesReceived < totalBytes) {
+        char recvBuffer[TCPBUFSIZE + 100];
+        if ((bytesReceived = (sock->recv(recvBuffer, TCPBUFSIZE))) <= 0) {
+            cerr << "Unable to read";
+            exit(1);
+        }
+        recvBuffer[bytesReceived] = '\0';
+        if (totalBytesReceived == 0) {
+            totalBytes = stoi(string(recvBuffer).substr(0, 10)) + 10;
+            plog("file size is %d", totalBytes);
+            fwrite(recvBuffer , sizeof(char), bytesReceived-10, fp);
+            //fprintf(fp, "%s", recvBuffer+10);
         } else {
-            tcpSendString(sock, "ack");
+            fwrite(recvBuffer , sizeof(char), bytesReceived, fp);
+            //fprintf(fp, "%s", recvBuffer);
         }
-    } else {
-        tcpSendString(sock, "ack");
+        totalBytesReceived += bytesReceived;
+        //plog("debug %d/%d", totalBytesReceived, totalBytes);
     }
-    string content = tcpRecvString(sock);
-    plog("master receive file %s(%d)", fname.c_str(), content.length());
-
-    //saveFile(content, fname);
-    /* This is super slow */
-    /* [TODO] Refractor this area! */
-    int cnt = 0;
-    for (auto it = member_list.begin(); it != member_list.end(); it++) {
-
-        /* Assuming no failure */
-        TCPSocket sock_w(member_list[it->first].ip, BASEPORT+3);
-        tcpSendString(&sock_w, "fileput;"+fname);
-        string ack = tcpRecvString(&sock_w);
-        tcpSendString(&sock_w, content);
-        ack = tcpRecvString(&sock_w);
-
-        string update = fname + "/" + std::to_string(it->first) + "/" + std::to_string(unixTimestamp());
-        newFileMappingLocation(update);
-        /* Send */
-        for (auto it = master_list.begin(); it != master_list.end(); it++) {
-            if (it->second == "Primary") continue;
-            TCPSocket sock_(member_list[it->first].ip, BASEPORT+3);
-            tcpSendString(&sock_, "newfloc;"+update);
-        }
-        cnt++;
-        if (cnt == 3) {
-            tcpSendString(sock, "finished");
-        }
-        if (cnt == 4) {
-            break;
-        }
-    }
-    plog("updated file mapping: %s", fileMappingToString().c_str());
-}
-
-void Daemon::clientGet(TCPSocket *sock, string fname){
-    if (role != "Primary") return;
-    if (hasFile(fname)) { 
-        tcpSendString(sock, "ack");
-        for (auto it = file_location[fname].begin(); it != file_location[fname].end(); it++) {
-            TCPSocket sock_w(member_list[it->first].ip, BASEPORT+3);
-            tcpSendString(&sock_w, "fileget;"+fname);
-            string content = tcpRecvString(&sock_w);         
-            tcpSendString(sock, content);
-            break;
-        }
-        return;
-    } else {
-        tcpSendString(sock, "file not exists");
-        return;
-    }
-
-}
-
-
-void Daemon::saveFile(string content, string fname){
-    string lfname = "./mp3/files/"+fname;
-    FILE *fp = fopen(lfname.c_str(),"w");
-    fprintf(fp, "%s", content.c_str());
+    plog("recv: %s file size: %d/%d bytes", fname.c_str(), totalBytesReceived, totalBytes);
     fclose(fp);
 }
 
 /* Response to the data saving request */
-void Daemon::dataRecv(TCPSocket *sock, string fname) {
-    tcpSendString(sock, "ack");
-    string content = tcpRecvString(sock);
-    plog("receive replication file %s(%d)", fname.c_str(), content.length());
-    saveFile(content, fname);
-    tcpSendString(sock, "finished");
-}
-
-/* Response to the data saving request */
-void Daemon::dataSend(TCPSocket *sock, string fname) {
-    //tcpSendString(sock, "ack");
-    //string content = tcpRecvString(sock);
-    //plog("receive replication file %s(%d)", fname.c_str(), content.length());
-    //saveFile(content, fname);
-    string content = readFile(fname);
-    tcpSendString(sock, content);
-}
-
-
-string Daemon::readFile(string fname) {
-    string lfname = "./mp3/files/"+fname;
-    std::ifstream ifs(lfname);
-    std::string content( (std::istreambuf_iterator<char>(ifs) ),
-                         (std::istreambuf_iterator<char>()    ) );
-
-    return content;
-}
-/* Response to the data saving request */
-void Daemon::dataPut(TCPSocket *sock, string input) {
+void Daemon::replicateFile(TCPSocket *sock, string input) {
     int dst_node = stoi(input.substr(0, input.find("/")));
     string fname = input.substr(input.find("/")+1, input.length());
-    string content = readFile(fname);
     TCPSocket sock_w(member_list[dst_node].ip, BASEPORT+3);
+    string ack;
     tcpSendString(&sock_w, "fileput;"+fname);
-    string ack = tcpRecvString(&sock_w);
-    tcpSendString(&sock_w, content);
     ack = tcpRecvString(&sock_w);
-    // if ack...
-    tcpSendString(sock, "success");
+    sendFile(&sock_w, "./mp3/files/"+fname);
+    ack = tcpRecvString(&sock_w);
+    if (ack == "success"){
+        tcpSendString(sock, "success");
+    } else {
+        tcpSendString(sock, "fail");
+    }
+    
 }
