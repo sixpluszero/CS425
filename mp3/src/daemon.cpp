@@ -76,29 +76,49 @@ void Daemon::command() {
         plog("[cmd debug] %s", buf);
         string msg;
         switch(buf[0]){
-            case 'l':
-                plog("[cmd debug] leave should happen");
-                for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
-                    string info = "update,leave," + member_list[self_index].toString();
-                    msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
+            case 'l': {
+                    plog("[cmd debug] leave should happen");
+                    for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
+                        string info = "update,leave," + member_list[self_index].toString();
+                        msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
+                    }
+                    leave_flag = true;
+                    break;
                 }
-                leave_flag = true;
-                break;
-            case 'i':
-                msg = member_list[self_index].toString();
-                out_socket.send(rip, msg.c_str());
-                break;
-            case 'm':
-                msg = membersToString();
-                out_socket.send(rip, msg.c_str());
-                break;
-            case 'q':
-                if (isPrimary()){
-                    msg = "yes";
-                } else {
-                    msg = "no";
-                }             
-                out_socket.send(rip, msg.c_str());
+            case 'i': {
+                    msg = member_list[self_index].toString();
+                    out_socket.send(rip, msg.c_str());
+                    break;
+                }
+            case 'm': {
+                    msg = membersToString();
+                    out_socket.send(rip, msg.c_str());
+                    break;
+                }
+            case 's': {
+                    system("ls ./mp3/files > ./out.txt");
+                    FILE *fp = fopen("./out.txt", "r");
+                    string msg = "";
+                    while (true) {
+                        char buffer[1005];
+                        int bytesRead = fread(buffer, 1, 1000, fp);
+                        buffer[bytesRead] = '\0';
+                        msg = msg + string(buffer);
+                        if (bytesRead < 1000) break;
+                    }
+                    fclose(fp);
+                    out_socket.send(rip, msg.c_str());
+                    break;
+                }
+            case 'q': {
+                    if (isPrimary()){
+                        msg = "yes";
+                    } else {
+                        msg = "no";
+                    }             
+                    out_socket.send(rip, msg.c_str());
+                    break;
+                }
             default:
                 break;
         }

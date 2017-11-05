@@ -12,11 +12,11 @@ RECV_PORT = BASEPORT
 assert(len(sys.argv) > 1)
 MESSAGE = sys.argv[1]
 
-print "message:", MESSAGE
+print "Command:", MESSAGE
 
 if (MESSAGE == "join"):
     os.system('pkill -u %s server' % (USER))
-    os.system('nohup ./mp3/server > /dev/null 2>&1 & ')
+    os.system('nohup ./mp3/server > err.log 2>&1 & ')
 elif (MESSAGE == "id"):
     recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     recv_sock.bind((RECV_IP, RECV_PORT))
@@ -33,10 +33,20 @@ elif (MESSAGE == "member"):
     data, addr = recv_sock.recvfrom(1024)
     print data
     recv_sock.close()
-else:
+elif (MESSAGE == "store"):
+    recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    recv_sock.bind((RECV_IP, RECV_PORT))
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(MESSAGE, (CMD_IP, CMD_PORT))
+    data, addr = recv_sock.recvfrom(1024)
+    print data
+    recv_sock.close()
+elif (MESSAGE == "leave"):
     recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     recv_sock.bind((RECV_IP, RECV_PORT))
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.sendto(MESSAGE, (CMD_IP, CMD_PORT))
     recv_sock.close()
+else:
+    print "Unsupported command. Please revise"
 

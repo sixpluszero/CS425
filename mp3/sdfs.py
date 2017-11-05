@@ -2,8 +2,8 @@ import os
 import sys
 import time
 import socket
-
-
+import mp_config
+BASEPORT = mp_config.BASEPORT
 BUFFER_SIZE = 4096
 BIGSIZE = 1000000
 
@@ -64,8 +64,8 @@ def connect_master():
     LOCALHOST = '0.0.0.0'
     for i in range(10):
         UDP_IP = '172.22.154.' + str(182+i)
-        RECV_PORT = 6002
-        CMD_PORT = 6000
+        RECV_PORT = int(BASEPORT)+2
+        CMD_PORT = int(BASEPORT)
         try:
             recv_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             recv_sock.bind((LOCALHOST, CMD_PORT))        
@@ -97,7 +97,7 @@ def main(args):
     else:
         print "Master IP is:", data
     TCP_IP = data
-    TCP_PORT = 6003
+    TCP_PORT = int(BASEPORT) + 3
     soc = TCPConnect(TCP_IP, TCP_PORT)
     if soc == None:
         print "Error: TCP connection error"
