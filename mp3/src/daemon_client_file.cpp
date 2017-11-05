@@ -29,9 +29,6 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
     recvFile(sock, tmp_file);
     plog("file received at temp file %s", tmp_file.c_str());
 
-    /* This is super slow */
-    /* [TODO] Refractor this area! */
-
     vector< int > cand;
     for (auto it = member_list.begin(); it != member_list.end(); it++) {
         cand.push_back(it->first);

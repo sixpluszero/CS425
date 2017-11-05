@@ -122,17 +122,13 @@ void Daemon::updateHandler(string msg) {
 
             if (isMaster()){
                 clearNodeFile(tmp.id);
-                plog("after failure clear: %s", fileMappingToString().c_str());
+                plog("after crash file location mapping: %s", fileMappingToString().c_str());
                 if (isPrimary()){
-                    clearNodeFile(tmp.id);
-                    plog("after failure clear: %s", fileMappingToString().c_str());
                     if (member_list.size() >= 3 && master_list.size() < 3) {
                         assignBackup(3-master_list.size());
                     }
-                    
                     std::thread fix_t(&Daemon::fixReplication, this);
                     fix_t.detach();
-                    
                 } else {
                     if (!hasPrimary() && isFirstBackup()) {
                         upgradeBackup();
@@ -164,14 +160,18 @@ void Daemon::updateHandler(string msg) {
             
             if (isMaster()){
                 clearNodeFile(tmp.id);
-                plog("after failure clear: %s", fileMappingToString().c_str());
+                plog("after crash file location mapping: %s", fileMappingToString().c_str());
                 if (isPrimary()){
                     if (member_list.size() >= 3 && master_list.size() < 3) {
                         assignBackup(3-master_list.size());
                     }
+                    std::thread fix_t(&Daemon::fixReplication, this);
+                    fix_t.detach();
                 } else {
                     if (!hasPrimary() && isFirstBackup()) {
                         upgradeBackup();
+                        std::thread fix_t(&Daemon::fixReplication, this);
+                        fix_t.detach();
                     }
                 }
             }

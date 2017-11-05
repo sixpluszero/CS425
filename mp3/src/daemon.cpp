@@ -56,12 +56,6 @@ void Daemon::join() {
         master_list.clear();
         master_list[1] = "Primary";
         role = "Primary";
-        /* Below is test message */
-        //newFileMappingLocation("abc.def/1/666666666");
-        //newFileMappingLocation("abc.def/2/666666666");
-        //newFileMappingLocation("abc.def/3/666666666");
-        //newFileMappingLocation("abcd.ef/1/666666666");
-        //plog("testing %s", fileMappingToString().c_str());
         join = true;
         break;
     }
@@ -73,11 +67,11 @@ void Daemon::command() {
         char buf[BUFSIZE];
         char rip[BUFSIZE];
         cmd_socket.recv(rip, buf);
-        plog("[cmd debug] %s", buf);
+        plog("Receive command: %s", buf);
         string msg;
         switch(buf[0]){
             case 'l': {
-                    plog("[cmd debug] leave should happen");
+                    plog("Receive leave request");
                     for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
                         string info = "update,leave," + member_list[self_index].toString();
                         msg_socket.send(member_list[it->first].ip.c_str(), info.c_str());
@@ -294,5 +288,4 @@ node_socket(BASEPORT+3){
     }
 
     join();
-
 }
