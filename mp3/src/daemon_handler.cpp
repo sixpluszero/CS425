@@ -131,6 +131,7 @@ void Daemon::updateHandler(string msg) {
                     fix_t.detach();
                 } else {
                     if (!hasPrimary() && isFirstBackup()) {
+                        plog("Upgrade myself to be primary master.");
                         upgradeBackup();
                         std::thread fix_t(&Daemon::fixReplication, this);
                         fix_t.detach();
@@ -169,6 +170,7 @@ void Daemon::updateHandler(string msg) {
                     fix_t.detach();
                 } else {
                     if (!hasPrimary() && isFirstBackup()) {
+                        plog("Upgrade myself to be primary master.");
                         upgradeBackup();
                         std::thread fix_t(&Daemon::fixReplication, this);
                         fix_t.detach();

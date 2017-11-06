@@ -174,6 +174,7 @@ void Daemon::timeout() {
                 }
             } else {
                 if (!hasPrimary() && isFirstBackup()) {
+                    plog("Upgrade myself to be primary master.");
                     upgradeBackup();
                     if (to_remove.size() > 0) {
                         std::thread fix_t(&Daemon::fixReplication, this);
@@ -226,12 +227,20 @@ void Daemon::channel() {
             msg_t.detach();
         }
     }
+    plog("module channel exit");
 }
 
 /* Handles file related transmission protocol */
 void Daemon::nodeMsgHandler(TCPSocket *sock) {
-    string info = tcpRecvString(sock);
-    plog("channel recv: %s", info.c_str());
+    string info;
+    try {
+        info = tcpRecvString(sock);
+        plog("channel recv: %s", info.c_str());
+    } catch (...) {
+        plog("Unknown error in sender side. Close the connection.");
+        delete sock;
+        return;
+    }
     try {
         if (prefixMatch(info, "newfmap")) {
             newFileMapping(info.substr(8, info.length()));

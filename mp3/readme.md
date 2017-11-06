@@ -1,5 +1,5 @@
 # UIUC CS425 MP3
-This README file describes the basic usage of our membership system. This folder contains the source code of membership system written by C++. Make sure you have installed C++ complier with C++11. To compile the source code, type "make clean; make" in this folder and the Makefile will build up the source code, generate the binary named server.
+This README file describes the basic usage of our membership system. This folder contains the source code of membership system written by C++. Make sure you have installed C++ complier with C++11. To compile the source code, type `make clean; make` in this folder and the Makefile will build up the source code, generate the binary named server.
 
 ## Deploy(From local)
 On your local computer, please type `init.sh jialin2` or `init.sh zijunc2` to init the code. This will write some configuration to make sure which account/port combination you will be using.
