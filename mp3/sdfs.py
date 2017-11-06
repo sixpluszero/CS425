@@ -24,16 +24,20 @@ def send_pack(soc, s):
     soc.send(s)
 
 def recv_pack(soc):
-    total_recv = BIGSIZE
-    data = soc.recv(BUFFER_SIZE)
-    dlen = int(data[:10])
-    total_recv = dlen - len(data[10:])
-    ret = data[10:]
-    while (total_recv > 0):
+    try:
+        total_recv = BIGSIZE
         data = soc.recv(BUFFER_SIZE)
-        ret = ret + data
-        total_recv = total_recv - len(data)
-    return ret
+        dlen = int(data[:10])
+        total_recv = dlen - len(data[10:])
+        ret = data[10:]
+        while (total_recv > 0):
+            data = soc.recv(BUFFER_SIZE)
+            ret = ret + data
+            total_recv = total_recv - len(data)
+        return ret
+    except:
+        print "Remote data error. Exit"
+        exit()
 
 def recv_file(soc, fname):
     total_recv = 0
