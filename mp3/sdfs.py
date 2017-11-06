@@ -100,10 +100,18 @@ def command_check(args):
     if (len(args) == 1):
         print "No command detected. Exit"
         exit(0)
+    if (args[1] == "store"):
+        print "Please use cmd.py to execute command 'store'. Exit"
+        exit(0)
     if (not args[1] in ["put", "get", "delete", "ls"]):
         print "Command %s not supported. Exit" % (args[1])
         exit(0)
-
+    if (args[1] in ["put", "get"] and len(args) != 4):
+        print "Command %s missing arguments. Exit" % (args[1])
+        exit(0)
+    if (args[1] in ["ls", "delete"] and len(args) != 3):
+        print "Command %s missing arguments. Exit" % (args[1])
+        exit(0)
 class AlarmException(Exception):
     pass
 
