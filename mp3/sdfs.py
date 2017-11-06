@@ -2,6 +2,9 @@ import os
 import sys
 import time
 import socket
+import thread
+import signal
+import threading
 import mp_config
 BASEPORT = mp_config.BASEPORT
 BUFFER_SIZE = 4096
@@ -89,7 +92,23 @@ def TCPConnect(TCP_IP, TCP_PORT):
         return None
     return s
 
+def command_check(args):
+    if (len(args) == 1):
+        print "No command detected. Exit"
+        exit(0)
+    if (not args[1] in ["put", "get", "delete", "ls"]):
+        print "Command %s not supported. Exit" % (args[1])
+        exit(0)
+
+class AlarmException(Exception):
+    pass
+
+def alarmHandler(signum, frame):
+    raise AlarmException
+
 def main(args):
+    # First check if command is recognized. If not, return
+    command_check(args)
     data = connect_master()
     if (data == "fail"):
         print "Error: Cannot connect to server"
@@ -109,7 +128,15 @@ def main(args):
         send_pack(soc, MESSAGE)
         data = recv_pack(soc)
         if (data != "ack"):
-            uin = raw_input("Please confirm if you want to update this file: Y/n\n")
+            uin = "No"
+            signal.signal(signal.SIGALRM, alarmHandler)
+            signal.alarm(30)
+            try:
+                uin = raw_input("File %s exists, do you want to update? Y/n\n" % (args[3]))
+                signal.alarm(0)
+            except:
+                print "No keyboard input in 30 seconds. Rejecting this update"
+                uin = "No"
             if (uin in ["Y", "Yes", "y", "yes"]):
                 send_pack(soc, "Yes")
                 data = recv_pack(soc)

@@ -30,8 +30,14 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
     plog("file received at temp file %s", tmp_file.c_str());
 
     vector< int > cand;
-    for (auto it = member_list.begin(); it != member_list.end(); it++) {
-        cand.push_back(it->first);
+    if (hasFile(fname)) {
+        for (auto it = file_location[fname].begin(); it != file_location[fname].end(); it++) {
+            cand.push_back(it->first);
+        }
+    } else {
+        for (auto it = member_list.begin(); it != member_list.end(); it++) {
+            cand.push_back(it->first);
+        }    
     }
     std::random_shuffle(cand.begin(), cand.end());
 
@@ -43,6 +49,10 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
         TCPSocket sock_w(member_list[nid].ip, BASEPORT+3);
         tcpSendString(&sock_w, "fileput;"+fname);
         ack = tcpRecvString(&sock_w);
+        if (ack == "error") {
+            plog("Error in replicating new file to %d", nid);
+            continue;
+        }
         sendFile(&sock_w, tmp_file);
         ack = tcpRecvString(&sock_w);
         plog("response from replica server: %s", ack.c_str());
@@ -63,6 +73,9 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
             if (cnt == 4) {
                 break;
             }    
+        } else {
+            plog("Error in replicating new file to %d", nid);
+            continue;
         }
     }
     plog("updated file mapping: %s", fileMappingToString().c_str());

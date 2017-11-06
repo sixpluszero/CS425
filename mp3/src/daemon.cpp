@@ -232,38 +232,44 @@ void Daemon::channel() {
 void Daemon::nodeMsgHandler(TCPSocket *sock) {
     string info = tcpRecvString(sock);
     plog("channel recv: %s", info.c_str());
-    if (prefixMatch(info, "newfmap")) {
-        newFileMapping(info.substr(8, info.length()));
-        plog("synced file mapping: %s", fileMappingToString().c_str());
-        tcpSendString(sock, "ack");
-    } else if (prefixMatch(info, "newfloc")) {
-        newFileMappingLocation(info.substr(8, info.length()));
-        plog("updated file mapping: %s", fileMappingToString().c_str());
-    } else if (prefixMatch(info, "fileput")) {
-        string fname = "./mp3/files/" + info.substr(8, info.length());
-        tcpSendString(sock, "ack");
-        recvFile(sock, fname);
-        tcpSendString(sock, "success");
-    } else if (prefixMatch(info, "fileget")) {
-        string fname = "./mp3/files/" + info.substr(8, info.length());
-        sendFile(sock, fname);
-    } else if (prefixMatch(info, "clientput")) {
-        clientPut(sock, info.substr(10, info.length()));
-    } else if (prefixMatch(info, "copy")) {
-        replicateFile(sock, info.substr(5, info.length()));
-    } else if (prefixMatch(info, "clientget")) { 
-        clientGet(sock, info.substr(10, info.length()));
-    } else if (prefixMatch(info, "clientdel")) {
-        clientDel(sock, info.substr(10, info.length()));
-    } else if (prefixMatch(info, "masterfiledel")) {
-        file_location.erase(info.substr(14, info.length()));
-    } else if (prefixMatch(info, "filedel")) {
-        string cmd = "rm ./mp3/files/"+info.substr(8, info.length());
-        system(cmd.c_str());
-    } else if (prefixMatch(info, "clientlist")) {
-        clientList(sock, info.substr(11, info.length()));
+    try {
+        if (prefixMatch(info, "newfmap")) {
+            newFileMapping(info.substr(8, info.length()));
+            plog("synced file mapping: %s", fileMappingToString().c_str());
+            tcpSendString(sock, "ack");
+        } else if (prefixMatch(info, "newfloc")) {
+            newFileMappingLocation(info.substr(8, info.length()));
+            plog("updated file mapping: %s", fileMappingToString().c_str());
+        } else if (prefixMatch(info, "fileput")) {
+            string fname = "./mp3/files/" + info.substr(8, info.length());
+            tcpSendString(sock, "ack");
+            recvFile(sock, fname);
+            tcpSendString(sock, "success");
+        } else if (prefixMatch(info, "fileget")) {
+            string fname = "./mp3/files/" + info.substr(8, info.length());
+            sendFile(sock, fname);
+        } else if (prefixMatch(info, "clientput")) {
+            clientPut(sock, info.substr(10, info.length()));
+        } else if (prefixMatch(info, "copy")) {
+            replicateFile(sock, info.substr(5, info.length()));
+        } else if (prefixMatch(info, "clientget")) { 
+            clientGet(sock, info.substr(10, info.length()));
+        } else if (prefixMatch(info, "clientdel")) {
+            clientDel(sock, info.substr(10, info.length()));
+        } else if (prefixMatch(info, "masterfiledel")) {
+            file_location.erase(info.substr(14, info.length()));
+        } else if (prefixMatch(info, "filedel")) {
+            string cmd = "rm ./mp3/files/"+info.substr(8, info.length());
+            system(cmd.c_str());
+        } else if (prefixMatch(info, "clientlist")) {
+            clientList(sock, info.substr(11, info.length()));
+        }    
+    } catch (...) {
+        plog("encounter error at node msg channel with request %s", info.c_str());
+        tcpSendString(sock, "error");
+        delete sock;
+        return;
     }
-    
     delete sock;
 }
 
