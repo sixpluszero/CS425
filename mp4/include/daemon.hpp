@@ -51,7 +51,7 @@ public:
 	void join(); // send join request to introducer, receive membership list
 	void command(); // send leave message to contacts
 	void receive(); // listen to all membership related messages
-	void channel(); // handle master events
+	void sdfs(); // handle file related events
 	
 	/* Master functions */
 	bool isPrimary();
@@ -82,6 +82,8 @@ public:
 	void clientList(TCPSocket *sock, string fname);
 
 
+	void sdfsHandler(TCPSocket *sock);
+
 	/* Membership functions */
 	int newMember(char * remote_ip);
 	void updateContact(long long ts);
@@ -108,5 +110,5 @@ public:
 	void joinHandler(char *remote_ip);
 	void updateHandler(string msg);
 	void heartbeatHandler(char *remote_ip);
-	void nodeMsgHandler(TCPSocket *sock);
+	
 };

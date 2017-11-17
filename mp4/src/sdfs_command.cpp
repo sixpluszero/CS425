@@ -46,25 +46,20 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
   for (auto it = cand.begin(); it != cand.end(); it++) {
     int nid = *it; 
     string ack;
-    int r;
     TCPSocket sock_w(member_list[nid].ip, BASEPORT+3);
-    r = sock_w.sendStr("fileput;"+fname);
-    if (r == 1) {
+    if (sock_w.sendStr("fileput;"+fname) == 1) {
       plog("Error in replicating new file to %d", nid);
       continue;
     }
-    r = sock_w.recvStr(ack);
-    if (r == 1) {
+    if (sock_w.recvStr(ack) == 1) {
       plog("Error in replicating new file to %d", nid);
       continue;
     }
-    r = sock_w.sendFile(tmp_file);
-    if (r == 1) {
+    if (sock_w.sendFile(tmp_file) == 1) {
       plog("Error in replicating new file to %d", nid);
       continue;
     }
-    r = sock_w.recvStr(ack);
-    if (r == 1) {
+    if (sock_w.recvStr(ack) == 1) {
       plog("Error in replicating new file to %d", nid);
       continue;
     }
@@ -101,23 +96,19 @@ void Daemon::clientGet(TCPSocket *sock, string fname){
     return;
   }
   if (hasFile(fname)) { 
-    sock->sendStr("ack");
-    sock->recvStr(ack);
-    for (auto it = file_location[fname].begin(); it != file_location[fname].end(); it++) {
-      int r;
-      TCPSocket sock_w(member_list[it->first].ip, BASEPORT+3);
-      r = sock_w.sendStr("fileget;"+fname);
-      if (r == 1) continue;
-      r = sock_w.recvFile("./mp4/tmp/"+fname);
-      if (r == 1) continue;
-      r = sock->sendFile("./mp4/tmp/"+fname);
-      if (r == 1) continue;
-      break;
-    }
-    return;
+  sock->sendStr("ack");
+  sock->recvStr(ack);
+  for (auto it = file_location[fname].begin(); it != file_location[fname].end(); it++) {
+    TCPSocket sock_w(member_list[it->first].ip, BASEPORT+3);
+    if (sock_w.sendStr("fileget;"+fname) == 1) continue;
+    if (sock_w.recvFile("./mp4/tmp/"+fname) == 1) continue;
+    if (sock->sendFile("./mp4/tmp/"+fname) == 1) continue;
+    break;
+  }
+  return;
   } else {
-      sock->sendStr("file not exists");
-      return;
+    sock->sendStr("file not exists");
+    return;
   }
 
 }
@@ -142,8 +133,8 @@ void Daemon::clientDel(TCPSocket *sock, string fname){
     sock->sendStr("success");
     return;
   } else {
-      sock->sendStr("file not exists");
-      return;        
+    sock->sendStr("file not exists");
+    return;        
   }
 }
 
