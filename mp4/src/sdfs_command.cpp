@@ -74,11 +74,11 @@ void Daemon::clientPut(TCPSocket *sock, string fname) {
         sock_.sendStr("newfloc;"+update);
       }
       cnt++;
-      if (cnt == 3) {
+      if (cnt == ((REPLICA + 1) / 2)) {
         plog("reach quorum");
         sock->sendStr("success");
       }
-      if (cnt == 4) {
+      if (cnt == REPLICA) {
         break;
       }    
     } else {

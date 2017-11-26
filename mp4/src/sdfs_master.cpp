@@ -58,7 +58,7 @@ void Daemon::upgradeBackup() {
   for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
     msg_socket.send(member_list[it->first].ip.c_str(), msg.c_str());
   }
-  assignBackup(3 - master_list.size());
+  assignBackup(NUMMASTER - master_list.size());
 }
 
 /**

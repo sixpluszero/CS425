@@ -163,8 +163,8 @@ void Daemon::timeout() {
       }
       
       if (isPrimary()){
-        if (member_list.size() >= 3 && master_list.size() < 3) {
-          assignBackup(3-master_list.size());
+        if (member_list.size() >= NUMMASTER && master_list.size() < NUMMASTER) {
+          assignBackup(NUMMASTER-master_list.size());
         }
         if (to_remove.size() > 0) {
           std::thread fix_t(&Daemon::fixReplication, this);

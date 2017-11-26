@@ -7,7 +7,7 @@ void Daemon::joinHandler(char *remote_ip) {
   remote_pos = newMember(remote_ip); /* update membership */
 
   /* Only handle initial coldstart state */
-  if (member_list.size() <= 3 && master_list.size() < 3) {
+  if (member_list.size() <= NUMMASTER && master_list.size() < NUMMASTER) {
     master_list[remote_pos] = "Backup";
   }
 
@@ -126,8 +126,8 @@ void Daemon::updateHandler(string msg) {
         clearNodeFile(tmp.id);
         plog("after crash file location mapping: %s", fileMappingToString().c_str());
         if (isPrimary()){
-          if (member_list.size() >= 3 && master_list.size() < 3) {
-            assignBackup(3-master_list.size());
+          if (member_list.size() >= NUMMASTER && master_list.size() < NUMMASTER) {
+            assignBackup(NUMMASTER-master_list.size());
           }
           std::thread fix_t(&Daemon::fixReplication, this);
           fix_t.detach();
@@ -165,8 +165,8 @@ void Daemon::updateHandler(string msg) {
         clearNodeFile(tmp.id);
         plog("after crash file location mapping: %s", fileMappingToString().c_str());
         if (isPrimary()){
-          if (member_list.size() >= 3 && master_list.size() < 3) {
-            assignBackup(3-master_list.size());
+          if (member_list.size() >= NUMMASTER && master_list.size() < NUMMASTER) {
+            assignBackup(NUMMASTER-master_list.size());
           }
           std::thread fix_t(&Daemon::fixReplication, this);
           fix_t.detach();

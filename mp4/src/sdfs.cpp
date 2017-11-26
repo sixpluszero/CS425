@@ -39,8 +39,8 @@ void Daemon::replicateFile(TCPSocket *sock, string input) {
 void Daemon::fixReplication(){
   plog("start fixing replication");
   for (auto it = file_location.begin(); it != file_location.end(); it++) {
-    if (it->second.size() == 4) continue;
-    while (it->second.size() < 4 && member_list.size() >= 4) { /* If data node is less than four, don't fix. */
+    if (it->second.size() == REPLICA) continue;
+    while (it->second.size() < REPLICA && member_list.size() >= REPLICA) { /* If data node is less than four, don't fix. */
       /* Randomly pick one node that has this file */
       vector<int> cand;
       for (auto it_0 = it->second.begin(); it_0 != it->second.end(); it_0++) {
@@ -51,7 +51,7 @@ void Daemon::fixReplication(){
       plog("replica src node is %d", src_node);
       string fname = it->first;
       plog("fixing %s using replica at %d", fname.c_str(), src_node);
-      while (it->second.size() < 4 && member_list.size() >= 4) {
+      while (it->second.size() < REPLICA && member_list.size() >= REPLICA) {
         /* Randomly pick a new data node */
         cand.clear();
         for (auto it_0 = member_list.begin(); it_0 != member_list.end(); it_0++) {
