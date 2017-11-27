@@ -12,7 +12,7 @@
 #include "tcpsocket.hpp"
 #include "node.hpp"
 #include "config.hpp"
-#include "fstream"
+#include <fstream>
 #define NODE 10
 #define DROPRATE 0
 #define INTRODUCER 10
@@ -30,6 +30,7 @@ private:
 	UDPSocket msg_socket; // Internal membership message
 	UDPSocket cmd_socket; // For client commands
 	TCPServerSocket node_socket; // For file system realted communication
+	TCPServerSocket sava_socket; // For SAVA framework communication
 	map<int, VMNode> member_list;
 	map<int, long long> contact_list;
 	string self_ip;
@@ -42,6 +43,22 @@ private:
 	string role;
 	map<int, string> master_list;
 	map<string, map<int, long long> > file_location;
+	/**
+	 * Below is data structure for MP4 SAVA
+	 */ 
+	string SAVA_APP_NAME;
+	string SAVA_INPUT;
+	string SAVA_OUTPUT;
+	string SAVA_COMBINATOR;
+	int SAVA_GRAPH;
+	int SAVA_ROUND;
+	int SAVA_STATE; /* 0: Init, 1: Running, 2: Stop */
+	int SAVA_NUM_WORKER;
+	map<int, int> SAVA_VERTEX_MAPPING;
+	map<int, int> SAVA_WORKER_MAPPING;
+	map<int, vector<int>> SAVA_EDGES;
+	
+
 public:
 	/* Init function */
 	Daemon(int flag);
@@ -63,6 +80,14 @@ public:
 	void assignBackup(int num);
 	void upgradeBackup();
 
+	/* Sava functions */
+	void sava();
+	int savaCompile();
+	void savaReplicateMeta();
+	int	 savaGraphPartition();
+	void savaHandler(TCPSocket *sock);
+	void savaTask(TCPSocket *sock, string app, string input, string output, string comb);
+
 	/* File functions */
 	void clearNodeFile(int id);
 	void initFileMapping();
@@ -81,7 +106,6 @@ public:
 	void clientGet(TCPSocket *sock, string fname);
 	void clientDel(TCPSocket *sock, string fname);
 	void clientList(TCPSocket *sock, string fname);
-
 
 	void sdfsHandler(TCPSocket *sock);
 

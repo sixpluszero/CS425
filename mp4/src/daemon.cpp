@@ -221,7 +221,8 @@ Daemon::Daemon(int flag):
 out_socket(UDPSocket((BASEPORT), true)),    
 msg_socket(UDPSocket((BASEPORT+1))), 
 cmd_socket(UDPSocket((BASEPORT+2))), 
-node_socket(BASEPORT+3){
+node_socket(BASEPORT+3),
+sava_socket(BASEPORT+4){
   system("rm ./mp4/files/*");
   system("rm ./mp4/tmp/*");
   member_list.clear();
