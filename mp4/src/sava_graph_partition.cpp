@@ -1,14 +1,16 @@
 #include "daemon.hpp"
 
-int Daemon::savaGraphPartition() {
+int Daemon::savaPartitionGraph() {
     FILE *fp;
     string ack, cmd, fname;
     for (auto x : file_location[SAVA_INPUT]) {
         TCPSocket sock_f(member_list[x.first].ip, BASEPORT + 3);
         cmd = "fileget;" + SAVA_INPUT;
         sock_f.sendStr(cmd.c_str());
-        sock_f.recvFile("tmpgraph");
-        break;
+        if (sock_f.recvFile("./mp4/tmp/tmpgraph") == 0) {
+            plog("graph file received.");
+            break;
+        }
     }
 
     SAVA_NUM_WORKER = 0;
@@ -16,6 +18,8 @@ int Daemon::savaGraphPartition() {
         if (master_list.find(x.first) != master_list.end()) continue;
         SAVA_WORKER_MAPPING[++SAVA_NUM_WORKER] = x.first;
     }
+    
+    plog("Worker number: %d", SAVA_NUM_WORKER);
 
     fp = fopen("./mp4/tmp/tmpgraph", "r");
     int x, y;
@@ -77,6 +81,10 @@ int Daemon::savaGraphPartition() {
         fname = "./mp4/sava/runner";
         sock_w.sendFile(fname.c_str());
         sock_w.recvStr(ack);
+        cmd = SAVA_APP_NAME + ";" + SAVA_COMBINATOR;
+        sock_w.sendStr(cmd.c_str());
+        sock_w.recvStr(ack);
         plog("Distributed file to %d(%s)", SAVA_WORKER_MAPPING[i], member_list[SAVA_WORKER_MAPPING[i]].ip.c_str());
     }
+    return 0;
 }

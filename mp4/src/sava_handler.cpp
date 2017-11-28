@@ -12,19 +12,20 @@ void Daemon::savaHandler(TCPSocket *sock) {
     plog("channel recv: %s", info.c_str());
     try {
         if (prefixMatch(info, "savanewtask")) {
-            string app, input, output, comb;
+            string app, input, output, comb, cmd;
             info = info.substr(12, info.length());
             app = info.substr(0, info.find(";"));
             info = info.substr(app.length()+1, info.length());
             input = info.substr(0, info.find(";"));
             info = info.substr(input.length()+1, info.length());
-            if (info.find(";") == -1) {
+            if (info.find(";") == std::string::npos) {
                 output = info;
             } else {
                 output = info.substr(0, info.find(";"));
                 info = info.substr(output.length()+1, info.length());
                 comb = info;    
             }
+            plog("New Task: %s %s %s %s %s", app.c_str(), input.c_str(), output.c_str(), comb.c_str());
             if (!hasFile(input)) {
                 sock->sendStr("error: input file not found.");
                 return;
@@ -35,22 +36,33 @@ void Daemon::savaHandler(TCPSocket *sock) {
             }
             sock->sendStr("ack");
             savaTask(sock, app, input, output, comb);
+            
+            sock->sendStr("finish");
 
         } else if (prefixMatch(info, "savasendinputs")){
+            string msg;
             sock->sendStr("ack");
-            sock->recvFile("vertices.txt");
+            sock->recvFile("./mp4/sava/vertices.txt");
             sock->sendStr("ack");
-            sock->recvFile("edges.txt");
+            sock->recvFile("./mp4/sava/edges.txt");
             sock->sendStr("ack");
-            sock->recvFile("runner");
+            sock->recvFile("./mp4/sava/runner");
+            system("chmod 777 ./mp4/sava/runner");
             sock->sendStr("ack");
-            cmd = "cp ./mp4/tmp/vertices.txt ./mp4/sava/vertices.txt";
-            system(cmd.c_str());
-            cmd = "cp ./mp4/tmp/edges.txt ./mp4/sava/edges.txt";
-            system(cmd.c_str());
-            cmd = "cp ./mp4/tmp/runner ./mp4/sava/runner";
-            system(cmd.c_str());
+            sock->recvStr(msg);
+            sock->sendStr("ack");
+            SAVA_APP_NAME = msg.substr(0, msg.find(";"));
+            SAVA_COMBINATOR = msg.substr(msg.find(";")+1, msg.length());
+        } else if (prefixMatch(info, "savaclientinit")) {
+            savaInitPregelClient();
+            sock->sendStr("ack");
+        } else if (prefixMatch(info, "savaclientstep")) {
+            int step;
+            step = stoi(info.substr(info.find(";")+1, info.length()));
+            savaClientSuperstep(sock, step);
+            
         } else {
+            sock->sendStr("ack");
             return;
         }
     } catch (...) {

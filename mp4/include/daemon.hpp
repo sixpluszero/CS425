@@ -12,6 +12,7 @@
 #include "tcpsocket.hpp"
 #include "node.hpp"
 #include "config.hpp"
+#include "pregel.hpp"
 #include <fstream>
 #define NODE 10
 #define DROPRATE 0
@@ -57,6 +58,12 @@ private:
 	map<int, int> SAVA_VERTEX_MAPPING;
 	map<int, int> SAVA_WORKER_MAPPING;
 	map<int, vector<int>> SAVA_EDGES;
+	map<int, TCPSocket *> SAVA_WORKER_CONN;
+	map<int, vector<double>> SAVA_REMOTE_MSGS;
+
+	map<int, double> PREGEL_LOCAL_VERTICES;
+	map<int, vector<Edge>> PREGEL_LOCAL_EDGES;
+	map<int, vector<Message>> PREGEL_IN_MESSAGES, PREGEL_OUT_MESSAGES;
 	
 
 public:
@@ -82,11 +89,24 @@ public:
 
 	/* Sava functions */
 	void sava();
-	int savaCompile();
+	int  savaCompile();
 	void savaReplicateMeta();
-	int	 savaGraphPartition();
+	int	 savaPartitionGraph();
+	void savaInitPregelMaster();
+	void savaInitPregelClient();
+	int  savaMasterSuperstep();
+	void savaMasterSuperstepThread(int wid);
+	int  savaClientSuperstep(TCPSocket *sock, int step);
 	void savaHandler(TCPSocket *sock);
 	void savaTask(TCPSocket *sock, string app, string input, string output, string comb);
+    void pregelWriteEdges();
+    void pregelWriteMessages();
+    void pregelWriteVertices();
+    void pregelExecution();
+    void pregelReadVertices();
+    void pregelReadLocalMessages();
+    void pregelGenRemoteMessages();
+    void pregelReadRemoteMessages();	
 
 	/* File functions */
 	void clearNodeFile(int id);

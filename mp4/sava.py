@@ -126,31 +126,32 @@ def main(args):
     else:
         print "Master IP is:", data
     TCP_IP = data
-    TCP_PORT = int(BASEPORT) + 3
+    TCP_PORT = int(BASEPORT) + 4
     soc = TCPConnect(TCP_IP, TCP_PORT)
     if soc == None:
         print "Error: TCP connection error"
         return
     assert(len(args) > 1)
     # python sava.py SSSP client.cpp rinput routput comb
-    MESSAGE = "savanewtask;%s;%s;%s" % (args[1], args[2], args[3])
-    if (len(args) > 4): 
-        MESSAGE = MESSAGE + ";" + (args[4])
+    MESSAGE = "savanewtask;%s;%s;%s" % (args[1], args[3], args[4])
+    if (len(args) > 5): 
+        MESSAGE = MESSAGE + ";" + (args[5])
     send_pack(soc, MESSAGE)
     data = recv_pack(soc)
     if (data != "ack"):
         print data
         soc.close()
         return
+    print "sending file"
     send_file(soc, args[2])
-
     while True:
         data = recv_pack(soc)
-        if (data.startWith("error"):
+        print "debug:", data
+        if (startWith(data, "error")):
             print data
             soc.close()
             return
-        elif (data.startWith("finish")):
+        elif (startWith(data, "finish")):
             print data
             soc.close()
             return
