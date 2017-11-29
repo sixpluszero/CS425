@@ -1,11 +1,13 @@
 #include "daemon.hpp"
 
 void Daemon::savaInitPregelMaster() {
-    string ack;
+    string ack, cmd;
     SAVA_WORKER_CONN.clear();
+    SAVA_NUM_VERTICES = SAVA_VERTEX_MAPPING.size();
+    cmd = "savaclientinit;" + to_string(SAVA_NUM_VERTICES);
     for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
         TCPSocket *sock_w = new TCPSocket(member_list[SAVA_WORKER_MAPPING[i]].ip, BASEPORT + 4);
-        sock_w->sendStr("savaclientinit");
+        sock_w->sendStr(cmd);
         SAVA_WORKER_CONN[i] = sock_w;
     }
 

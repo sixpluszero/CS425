@@ -13,7 +13,7 @@ using namespace std;
 typedef vector<Message>& MessageIterator;
 typedef vector<Edge>& EdgeIterator;
 
-extern int SUPERSTEP;
+extern int SUPERSTEP, NUM_VERTICES;
 extern map<int, vector<Message> > VERTEX_IN_MESSAGES, VERTEX_NEXT_MESSAGES;
 extern map<int, vector<Edge> > VERTEX_EDGES;
 
@@ -36,6 +36,18 @@ class Vertex {
 
         int Superstep() {
             return SUPERSTEP;
+        }
+
+        int NumVertices() {
+            return NUM_VERTICES;
+        }
+
+        int NumNeightbors() {
+            if (VERTEX_EDGES.find(id) == VERTEX_EDGES.end()) {
+                vector<Edge> tmp;
+                VERTEX_EDGES[id] = tmp;
+            }
+            return VERTEX_EDGES[id].size();            
         }
 
         double GetValue() {

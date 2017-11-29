@@ -155,6 +155,7 @@ def main(args):
             soc.close()
             return
         else:
+            send_pack(soc, "ack");
             pass
 
 main(sys.argv)

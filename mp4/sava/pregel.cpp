@@ -1,5 +1,5 @@
 #include "exec.hpp"
-int SUPERSTEP;
+int SUPERSTEP, NUM_VERTICES;
 string APP_NAME, COMBINE;
 map<int, vector<Message> > VERTEX_IN_MESSAGES, VERTEX_NEXT_MESSAGES;
 map<int, vector<Edge> > VERTEX_EDGES;
@@ -10,17 +10,16 @@ void init(int argc, char *argv[]) {
     assert(argc > 2);
     APP_NAME = string(argv[1]);
     SUPERSTEP = atoi(argv[2]);
-    if (argc == 4) {
-        COMBINE = string(argv[3]);
-    }
+    NUM_VERTICES = atoi(argv[3]);
+    if (argc == 5) COMBINE = string(argv[4]);
 }
 
 void readVertices() {
+    int id;
+    double value;
     string fname = "./mp4/sava/vertices_" + std::to_string(SUPERSTEP) + ".txt";
     FILE *fp = fopen(fname.c_str(), "r");
     if (fp == NULL) return;
-    int id;
-    double value;
     while (fscanf(fp, "%d %lf", &id, &value) != EOF) {
         Vertex tmp(id, value);
         ACTIVE_VERTICES.push_back(tmp);
@@ -29,11 +28,11 @@ void readVertices() {
 }
 
 void readMessages() {
+    int id, num;
+    double value;
     string fname = "./mp4/sava/messages_" + std::to_string(SUPERSTEP) + ".txt";
     FILE *fp = fopen(fname.c_str(), "r");
     if (fp == NULL) return;
-    int id, num;
-    double value;
     while (fscanf(fp, "%d %d", &id, &num) != EOF) {
         if (num == 0) continue;
         if (VERTEX_IN_MESSAGES.find(id) == VERTEX_IN_MESSAGES.end()) {
@@ -51,11 +50,11 @@ void readMessages() {
 }
 
 void readEdges() {
+    int src, num, dst;
+    double value;
     string fname = "./mp4/sava/edges_" + std::to_string(SUPERSTEP) + ".txt";
     FILE *fp = fopen(fname.c_str(), "r");
     if (fp == NULL) return;
-    int src, num, dst;
-    double value;
     while (fscanf(fp, "%d %d", &src, &num) != EOF) {
         if (num == 0) continue;
         if (VERTEX_EDGES.find(src) == VERTEX_EDGES.end()) {
@@ -64,7 +63,6 @@ void readEdges() {
         }
         for (int i = 0; i < num; i++) {
             fscanf(fp, "%d %lf", &dst, &value);
-            //printf("edge: %d %d %lf\n", src, dst, value);
             Edge edg(src, dst, value);
             VERTEX_EDGES[src].push_back(edg);
         }
@@ -77,18 +75,52 @@ void execution() {
         double org_val = v.Value();
         v.Compute(v.GetMessages());
         double new_val = v.Value();
-        if (org_val != new_val) {
+        if (abs(org_val - new_val) > 0.0000001) {
             VERTEX_NEXT_VALUE[v.VertexID()] = new_val;
         }
     }
-    printf("Run %lu nodes\n", ACTIVE_VERTICES.size());
+    //printf("Run %lu nodes\n", ACTIVE_VERTICES.size());
+}
+
+void combine() {
+    if (COMBINE == "MIN") {
+        for (auto v : VERTEX_NEXT_MESSAGES) {
+            if (v.second.size() == 0) continue;
+            double minv = v.second[0].Value();
+            for (auto w : v.second) {
+                minv = min(minv, w.Value());
+            }
+            v.second.clear();
+            v.second.push_back(Message(minv));
+        }
+    } else if (COMBINE == "MAX") {
+        for (auto v : VERTEX_NEXT_MESSAGES) {
+            if (v.second.size() == 0) continue;
+            double maxv = v.second[0].Value();
+            for (auto w : v.second) {
+                maxv = max(maxv, w.Value());
+            }
+            v.second.clear();
+            v.second.push_back(Message(maxv));
+        }
+    } else if (COMBINE == "SUM") {
+        for (auto v : VERTEX_NEXT_MESSAGES) {
+            if (v.second.size() == 0) continue;
+            double sumv = 0;
+            for (auto w : v.second) {
+                sumv = sumv + w.Value();
+            }
+            v.second.clear();
+            v.second.push_back(Message(sumv));
+        }
+    } else {
+        return;
+    }
 }
 
 void output() {
-    
     FILE *fp;
     string fname;
-
     // Need to implement message combinator
     fname = "./mp4/sava/newmsgs_" + std::to_string(SUPERSTEP) + ".txt";
     fp = fopen(fname.c_str(), "w");
@@ -108,7 +140,6 @@ void output() {
         fprintf(fp, "%d %lf\n", v.first, v.second);
     }
     fclose(fp);
-
 }
 
 int main(int argc, char *argv[]) {
@@ -127,6 +158,7 @@ int main(int argc, char *argv[]) {
     readMessages();
     readEdges();
     execution();
+    combine();
     output();
 
     return 0;

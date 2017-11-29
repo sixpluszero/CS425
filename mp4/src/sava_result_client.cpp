@@ -16,7 +16,6 @@ void Daemon::savaClientResult(TCPSocket *sock, int type, int num) {
     }
 
     if (type == 1) {
-        plog("DEBUG MIN!!!!");
         for (auto x : PREGEL_LOCAL_VERTICES) {
             minHeap.push(KV(x.first, x.second));
         }
@@ -33,7 +32,6 @@ void Daemon::savaClientResult(TCPSocket *sock, int type, int num) {
     }
 
     if (type == 2) {
-        plog("DEBUG MAX!!!!");
         for (auto x : PREGEL_LOCAL_VERTICES) {
             maxHeap.push(KV(x.first, x.second));
         }

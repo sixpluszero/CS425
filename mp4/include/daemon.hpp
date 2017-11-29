@@ -15,12 +15,13 @@
 #include "config.hpp"
 #include "pregel.hpp"
 #include <fstream>
+#include <chrono>
 #define NODE 10
 #define DROPRATE 0
 #define INTRODUCER 10
-#define HEARTBEAT 200000 /* (1/1000000 sec) Period for heartbeat() to wakeup and scan */
-#define SCAN 1000000 /* (1/1000000 sec) Period for timeout() to wakeup and scan */
-#define FAILURE 1500 /* (1/1000 sec) Time for timeout() to detect the failure */
+#define HEARTBEAT 200000 	// (1/1000000 sec) Period for heartbeat() to wakeup and scan
+#define SCAN 1000000 		// (1/1000000 sec) Period for timeout() to wakeup and scan
+#define FAILURE 15000 		// (1/1000 sec) Time for timeout() to detect the failure
 #define NUMMASTER 2
 #define REPLICA 3
 using namespace std;
@@ -54,8 +55,9 @@ private:
 	string SAVA_COMBINATOR;
 	int SAVA_GRAPH;
 	int SAVA_ROUND;
-	int SAVA_STATE; /* 0: Init, 1: Running, 2: Stop */
+	int SAVA_STATE; // 0: Init, 1: Running, 2: Stop
 	int SAVA_NUM_WORKER;
+	int SAVA_NUM_VERTICES;
 	map<int, int> SAVA_VERTEX_MAPPING;
 	map<int, int> SAVA_WORKER_MAPPING;
 	map<int, vector<int>> SAVA_EDGES;
@@ -108,6 +110,7 @@ public:
     void pregelExecution();
     void pregelReadVertices();
     void pregelReadLocalMessages();
+	void pregelCombineMessages();
     void pregelGenRemoteMessages();
     void pregelReadRemoteMessages();
 

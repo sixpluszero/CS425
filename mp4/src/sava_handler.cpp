@@ -53,6 +53,7 @@ void Daemon::savaHandler(TCPSocket *sock) {
             SAVA_APP_NAME = msg.substr(0, msg.find(";"));
             SAVA_COMBINATOR = msg.substr(msg.find(";")+1, msg.length());
         } else if (prefixMatch(info, "savaclientinit")) {
+            SAVA_NUM_VERTICES = stoi(info.substr(info.find(";")+1, info.length()));
             savaInitPregelClient();
             sock->sendStr("ack");
         } else if (prefixMatch(info, "savaclientstep")) {

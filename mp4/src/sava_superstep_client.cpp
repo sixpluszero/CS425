@@ -103,7 +103,7 @@ void Daemon::pregelWriteMessages() {
 }
 
 void Daemon::pregelExecution() {
-    string cmd = "./mp4/sava/runner " + SAVA_APP_NAME + " " + to_string(SAVA_ROUND);
+    string cmd = "./mp4/sava/runner " + SAVA_APP_NAME + " " + to_string(SAVA_ROUND) + " " + to_string(SAVA_NUM_VERTICES) + " " + SAVA_COMBINATOR;
     system(cmd.c_str());
 }
 
@@ -156,6 +156,43 @@ void Daemon::pregelReadLocalMessages() {
     fclose(fp);
 }
 
+void Daemon::pregelCombineMessages() {
+    if (SAVA_COMBINATOR == "MIN") {
+        for (auto v : PREGEL_OUT_MESSAGES) {
+            if (v.second.size() == 0) continue;
+            double minv = v.second[0].Value();
+            for (auto w : v.second) {
+                minv = min(minv, w.Value());
+            }
+            v.second.clear();
+            v.second.push_back(Message(minv));
+        }
+    } else if (SAVA_COMBINATOR == "MAX") {
+        for (auto v : PREGEL_OUT_MESSAGES) {
+            if (v.second.size() == 0) continue;
+            double maxv = v.second[0].Value();
+            for (auto w : v.second) {
+                maxv = max(maxv, w.Value());
+            }
+            v.second.clear();
+            v.second.push_back(Message(maxv));
+        }
+    } else if (SAVA_COMBINATOR == "SUM") {
+        for (auto v : PREGEL_OUT_MESSAGES) {
+            if (v.second.size() == 0) continue;
+            double sumv = 0;
+            for (auto w : v.second) {
+                sumv = sumv + w.Value();
+            }
+            v.second.clear();
+            v.second.push_back(Message(sumv));
+        }
+    } else {
+        return;
+    }
+
+}
+
 void Daemon::pregelGenRemoteMessages() {
     FILE *fp;
     string fname;
@@ -204,6 +241,7 @@ int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
     string fname;
     SAVA_ROUND = step;
     plog("ROUND: %d", SAVA_ROUND);
+    plog("Using combinator: %s", SAVA_COMBINATOR.c_str());
     pregelWriteEdges();
     pregelWriteMessages();
     pregelWriteVertices();
@@ -212,6 +250,7 @@ int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
     plog("Finish execution");
     pregelReadVertices();
     pregelReadLocalMessages();
+    pregelCombineMessages();
     pregelGenRemoteMessages();
     plog("Finish update local");
 
