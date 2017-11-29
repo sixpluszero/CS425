@@ -16,13 +16,12 @@ void init(int argc, char *argv[]) {
 }
 
 void readVertices() {
-    string fname = "./mp4/sava/" + APP_NAME + "_" + std::to_string(SUPERSTEP) + "_" + "vertices.txt";
+    string fname = "./mp4/sava/vertices_" + std::to_string(SUPERSTEP) + ".txt";
     FILE *fp = fopen(fname.c_str(), "r");
     if (fp == NULL) return;
     int id;
     double value;
     while (fscanf(fp, "%d %lf", &id, &value) != EOF) {
-        //printf("%d %lf\n", id, value);
         Vertex tmp(id, value);
         ACTIVE_VERTICES.push_back(tmp);
     }
@@ -30,7 +29,7 @@ void readVertices() {
 }
 
 void readMessages() {
-    string fname = "./mp4/sava/" + APP_NAME + "_" + std::to_string(SUPERSTEP) + "_" + "messages.txt";
+    string fname = "./mp4/sava/messages_" + std::to_string(SUPERSTEP) + ".txt";
     FILE *fp = fopen(fname.c_str(), "r");
     if (fp == NULL) return;
     int id, num;
@@ -52,7 +51,7 @@ void readMessages() {
 }
 
 void readEdges() {
-    string fname = "./mp4/sava/" + APP_NAME + "_" + std::to_string(SUPERSTEP) + "_" + "edges.txt";
+    string fname = "./mp4/sava/edges_" + std::to_string(SUPERSTEP) + ".txt";
     FILE *fp = fopen(fname.c_str(), "r");
     if (fp == NULL) return;
     int src, num, dst;
@@ -91,7 +90,7 @@ void output() {
     string fname;
 
     // Need to implement message combinator
-    fname = "./mp4/sava/" + APP_NAME + "_" + std::to_string(SUPERSTEP) + "_" + "messages_next.txt";
+    fname = "./mp4/sava/newmsgs_" + std::to_string(SUPERSTEP) + ".txt";
     fp = fopen(fname.c_str(), "w");
     for (auto v : VERTEX_NEXT_MESSAGES) {
         if (v.second.size() == 0) continue;
@@ -103,7 +102,7 @@ void output() {
     }
     fclose(fp);
 
-    fname = "./mp4/sava/" + APP_NAME + "_" + std::to_string(SUPERSTEP) + "_" + "vertices_next.txt";
+    fname = "./mp4/sava/newvtxs_" + std::to_string(SUPERSTEP) + ".txt";
     fp = fopen(fname.c_str(), "w");
     for (auto v : VERTEX_NEXT_VALUE) {
         fprintf(fp, "%d %lf\n", v.first, v.second);

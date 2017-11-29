@@ -1,7 +1,7 @@
 import os
 import sys
 import mp_config
-import threading
+from multiprocessing import Pool
 USER = mp_config.USER
 
 def rcompile():
@@ -22,8 +22,8 @@ assert(len(sys.argv) > 1)
 if (len(sys.argv) == 2):
     deploy(int(sys.argv[1]))
 else:
-    threads = []
-    for vid in range(int(sys.argv[1]), int(sys.argv[2]) + 1):
-        t = threading.Thread(target = deploy, args = (vid,))
-        threads.append(t)
-        t.start()
+    st = int(sys.argv[1])
+    en = int(sys.argv[2])
+    p = Pool(en - st + 1)
+    li = [x for x in range(st, en + 1)]
+    p.map(deploy, li)

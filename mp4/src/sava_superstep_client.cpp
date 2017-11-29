@@ -38,7 +38,7 @@ void Daemon::savaInitPregelClient() {
 void Daemon::pregelWriteVertices() {
     FILE *fp;
     string fname;
-    fname = "./mp4/sava/" + SAVA_APP_NAME + "_" + std::to_string(SAVA_ROUND) + "_" + "vertices.txt";
+    fname = "./mp4/sava/vertices_" + std::to_string(SAVA_ROUND) + ".txt";
     fp = fopen(fname.c_str(), "w");
     if (SAVA_ROUND == 0) {
         for (auto x : PREGEL_LOCAL_VERTICES) {
@@ -58,14 +58,14 @@ void Daemon::pregelWriteEdges() {
     FILE *fp;
     string fname;
     
-    fname = "./mp4/sava/" + SAVA_APP_NAME + "_" + std::to_string(SAVA_ROUND) + "_" + "edges.txt";
+    fname = "./mp4/sava/edges_" + std::to_string(SAVA_ROUND) + ".txt";
     fp = fopen(fname.c_str(), "w");
     if (SAVA_ROUND == 0) {
         for (auto x : PREGEL_LOCAL_VERTICES) {
             int id = x.first;
             if (PREGEL_LOCAL_EDGES.find(id) == PREGEL_LOCAL_EDGES.end()) continue;
             fprintf(fp, "%d %lu", id, PREGEL_LOCAL_EDGES[id].size());
-            for (int i = 0; i < PREGEL_LOCAL_EDGES[id].size(); i++) {
+            for (size_t i = 0; i < PREGEL_LOCAL_EDGES[id].size(); i++) {
                 fprintf(fp, " %d %lf", PREGEL_LOCAL_EDGES[id][i].Dst(), PREGEL_LOCAL_EDGES[id][i].Value());
             }
             fprintf(fp, "\n");
@@ -77,7 +77,7 @@ void Daemon::pregelWriteEdges() {
             int id = x.first;
             if (PREGEL_LOCAL_EDGES.find(id) == PREGEL_LOCAL_EDGES.end()) continue;
             fprintf(fp, "%d %lu", id, PREGEL_LOCAL_EDGES[id].size());
-            for (int i = 0; i < PREGEL_LOCAL_EDGES[id].size(); i++) {
+            for (size_t i = 0; i < PREGEL_LOCAL_EDGES[id].size(); i++) {
                 fprintf(fp, " %d %lf", PREGEL_LOCAL_EDGES[id][i].Dst(), PREGEL_LOCAL_EDGES[id][i].Value());
             }
             fprintf(fp, "\n");
@@ -89,12 +89,12 @@ void Daemon::pregelWriteEdges() {
 void Daemon::pregelWriteMessages() {
     FILE *fp;
     string fname;
-    fname = "./mp4/sava/" + SAVA_APP_NAME + "_" + std::to_string(SAVA_ROUND) + "_" + "messages.txt";
+    fname = "./mp4/sava/messages_" + std::to_string(SAVA_ROUND) + ".txt";
     fp = fopen(fname.c_str(), "w");
     for (auto x : PREGEL_IN_MESSAGES) {
         if (x.second.size() == 0) continue;
         fprintf(fp, "%d %lu", x.first, x.second.size());
-        for (int i = 0; i < x.second.size(); i++) {
+        for (size_t i = 0; i < x.second.size(); i++) {
             fprintf(fp, " %lf", x.second[i].Value());
         }
         fprintf(fp, "\n");
@@ -110,7 +110,7 @@ void Daemon::pregelExecution() {
 void Daemon::pregelReadVertices() {
     FILE *fp;
     string fname;
-    fname = "./mp4/sava/" + SAVA_APP_NAME + "_" + std::to_string(SAVA_ROUND) + "_" + "vertices_next.txt";
+    fname = "./mp4/sava/newvtxs_"+ std::to_string(SAVA_ROUND) + ".txt";
     fp = fopen(fname.c_str(), "r");
     if (fp == NULL) {
         plog("readVertices  it is null");
@@ -126,7 +126,7 @@ void Daemon::pregelReadVertices() {
 void Daemon::pregelReadLocalMessages() {
     FILE *fp;
     string fname;
-    fname = "./mp4/sava/" + SAVA_APP_NAME + "_" + std::to_string(SAVA_ROUND) + "_" + "messages_next.txt";
+    fname = "./mp4/sava/newmsgs_" + std::to_string(SAVA_ROUND) + ".txt";
     fp = fopen(fname.c_str(), "r");
     int id, num;
     double value;
@@ -163,7 +163,7 @@ void Daemon::pregelGenRemoteMessages() {
     fp = fopen(fname.c_str(), "w");
     for (auto x : PREGEL_OUT_MESSAGES) {
         fprintf(fp, "%d %lu", x.first, x.second.size());
-        for (int i = 0; i < x.second.size(); i++) {
+        for (size_t i = 0; i < x.second.size(); i++) {
             fprintf(fp, " %f", x.second[i].Value());
         }
         fprintf(fp, "\n");
@@ -175,7 +175,7 @@ void Daemon::pregelReadRemoteMessages() {
     FILE *fp;
     string fname;
 
-    fname = "./mp4/sava/" + SAVA_APP_NAME + "_" + std::to_string(SAVA_ROUND) + "_" + "messages_next_remote.txt";
+    fname = "./mp4/sava/rnewmsgs_" + std::to_string(SAVA_ROUND) + ".txt";
     fp = fopen(fname.c_str(), "r");
     if (fp == NULL) return;
     int id, num;
@@ -214,6 +214,7 @@ int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
     pregelReadLocalMessages();
     pregelGenRemoteMessages();
     plog("Finish update local");
+
     fname = "./mp4/sava/outmsgs.txt";
     if (sock->sendFile(fname.c_str()) == 0) {
         plog("Finish send msgs");
@@ -223,7 +224,7 @@ int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
         return 1;
     }
     
-    fname = "./mp4/sava/" + SAVA_APP_NAME + "_" + std::to_string(SAVA_ROUND) + "_" + "messages_next_remote.txt";
+    fname = "./mp4/sava/rnewmsgs_" + std::to_string(SAVA_ROUND) + ".txt";
     if (sock->recvFile(fname.c_str()) == 0) {
         plog("Finish recv msgs");
     } else {

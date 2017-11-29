@@ -2,6 +2,7 @@
 #include <thread>
 #include <algorithm>
 #include <vector>
+#include <queue>
 #include <map>
 #include <ctime>
 #include <string>
@@ -96,7 +97,9 @@ public:
 	void savaInitPregelClient();
 	int  savaMasterSuperstep();
 	void savaMasterSuperstepThread(int wid);
+	string savaMasterGetTopResult(int topN, int recv);
 	int  savaClientSuperstep(TCPSocket *sock, int step);
+	void savaClientResult(TCPSocket *sock, int type, int num);
 	void savaHandler(TCPSocket *sock);
 	void savaTask(TCPSocket *sock, string app, string input, string output, string comb);
     void pregelWriteEdges();
@@ -106,7 +109,7 @@ public:
     void pregelReadVertices();
     void pregelReadLocalMessages();
     void pregelGenRemoteMessages();
-    void pregelReadRemoteMessages();	
+    void pregelReadRemoteMessages();
 
 	/* File functions */
 	void clearNodeFile(int id);
@@ -156,4 +159,24 @@ public:
 	void updateHandler(string msg);
 	void heartbeatHandler(char *remote_ip);
 	
+};
+
+class KV {
+    public:
+        double value;
+        int id;
+
+        KV(int id_, double val_) {
+            value = val_;
+            id = id_;
+        }
+
+        const bool operator < (const KV &r) const {
+            return value < r.value;
+        }
+
+        const bool operator > (const KV &r) const {
+            return value > r.value;
+        }
+
 };

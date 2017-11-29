@@ -146,16 +146,15 @@ def main(args):
     send_file(soc, args[2])
     while True:
         data = recv_pack(soc)
-        print "debug:", data
+        #print "debug:", data
+        print "*data:\n", data
         if (startWith(data, "error")):
-            print data
             soc.close()
             return
         elif (startWith(data, "finish")):
-            print data
             soc.close()
             return
         else:
-            print data
+            pass
 
 main(sys.argv)

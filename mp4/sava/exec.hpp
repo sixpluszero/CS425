@@ -80,6 +80,5 @@ class Vertex {
         void VoteToHalt() {
 
         }
-
 };
 #endif

@@ -36,11 +36,10 @@ void Daemon::savaHandler(TCPSocket *sock) {
             }
             sock->sendStr("ack");
             savaTask(sock, app, input, output, comb);
-            
-            sock->sendStr("finish");
-
         } else if (prefixMatch(info, "savasendinputs")){
             string msg;
+            system("rm ./mp4/sava/*.txt");
+            system("rm ./mp4/sava/runner");
             sock->sendStr("ack");
             sock->recvFile("./mp4/sava/vertices.txt");
             sock->sendStr("ack");
@@ -59,8 +58,19 @@ void Daemon::savaHandler(TCPSocket *sock) {
         } else if (prefixMatch(info, "savaclientstep")) {
             int step;
             step = stoi(info.substr(info.find(";")+1, info.length()));
-            savaClientSuperstep(sock, step);
-            
+            savaClientSuperstep(sock, step);            
+        } else if (prefixMatch(info, "savaclientresult")) {
+            info = info.substr(info.find(";")+1, info.length());
+            string type = info.substr(0, info.find(";"));
+            info = info.substr(info.find(";")+1, info.length());
+            if (type == "min") {
+                savaClientResult(sock, 1, stoi(info));
+            } else if (type == "max") {
+                savaClientResult(sock, 2, stoi(info));
+            } else {
+                savaClientResult(sock, 0, 0);
+            }
+
         } else {
             sock->sendStr("ack");
             return;

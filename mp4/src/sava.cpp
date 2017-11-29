@@ -40,6 +40,55 @@ void Daemon::savaReplicateMeta() {
     }
 }
 
+string Daemon::savaMasterGetTopResult(int topN, int rev) {
+    string cmd, res;
+    FILE *fp;
+    int id, cnt;
+    double val;
+    priority_queue< KV, vector<KV>, greater<KV> > minHeap;
+    priority_queue< KV > maxHeap;
+    SAVA_WORKER_CONN.clear();
+    for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
+        TCPSocket *sock_w = new TCPSocket(member_list[SAVA_WORKER_MAPPING[i]].ip, BASEPORT + 4);
+        SAVA_WORKER_CONN[i] = sock_w;
+    }
+    
+    cmd = "savaclientresult;";
+    cmd += (rev == 0) ? "min;" : "max;";
+    cmd += to_string(topN);
+
+    for (auto x : SAVA_WORKER_CONN) {
+        x.second->sendStr(cmd);
+        x.second->recvFile("./mp4/tmp/tmptop");
+        fp = fopen("./mp4/tmp/tmptop", "r");
+        while (fscanf(fp, "%d %lf", &id, &val) != EOF) {
+            if (rev) {
+                maxHeap.push(KV(id, val));
+            } else {
+                minHeap.push(KV(id, val));
+            }
+        }
+    }
+
+    cnt = 0;
+    if (rev) {
+        while (!maxHeap.empty()) {
+            cnt++;
+            res += to_string(cnt) + ": (" + to_string(maxHeap.top().id) + ", " + to_string(maxHeap.top().value) + ")\n";
+            if (cnt == topN) break;
+            maxHeap.pop();
+        }
+    } else {
+        while (!minHeap.empty()) {
+            cnt++;
+            res += to_string(cnt) + ": (" + to_string(minHeap.top().id) + ", " + to_string(minHeap.top().value) + ")\n";
+            if (cnt == topN) break;
+            minHeap.pop();
+        }
+    }
+    return res;
+}
+
 void Daemon::savaTask(TCPSocket *sock, string app, string input, string output, string comb) {
     SAVA_APP_NAME = app;
     SAVA_INPUT = input;
@@ -66,16 +115,34 @@ void Daemon::savaTask(TCPSocket *sock, string app, string input, string output, 
     // Partiton graph
     savaPartitionGraph();
     plog("Graph partition and distribution completed.");
-    
     savaInitPregelMaster();
     plog("Init worker subgraph.");
+
     // Start superstep computation;
     while (SAVA_STATE != 2) {
         savaMasterSuperstep();
-        SAVA_ROUND++;
         plog("Finish %d round.", SAVA_ROUND);
-        if (SAVA_ROUND > 8) break;
+        string cmd = "Round " + std::to_string(SAVA_ROUND) + " finished.";
+        sock->sendStr(cmd);
+        SAVA_ROUND++;
+        //if (SAVA_ROUND > 8) break;
     }
+    
+    if (prefixMatch(SAVA_OUTPUT, "TOP+")) {
+        // Gather the topX(min) result
+        int topN = stoi(SAVA_OUTPUT.substr(4, SAVA_OUTPUT.length()));
+        string ans = savaMasterGetTopResult(topN, 0);
+        if (sock->sendStr(ans)) plog("Error in sending answer.");
+    } else if (prefixMatch(SAVA_OUTPUT, "TOP-")) {
+        // Gather the topX(max) result
+        int topN = stoi(SAVA_OUTPUT.substr(4, SAVA_OUTPUT.length()));
+        string ans = savaMasterGetTopResult(topN, 1);
+        if (sock->sendStr(ans)) plog("Error in sending answer.");
+    } else {
+        // Store it in SDFS
+        sock->sendStr("Result stored in SDFS");
+    }
+    sock->sendStr("finish");
     
 }
 

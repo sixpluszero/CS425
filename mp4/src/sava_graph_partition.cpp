@@ -13,6 +13,9 @@ int Daemon::savaPartitionGraph() {
         }
     }
 
+    SAVA_WORKER_MAPPING.clear();
+    SAVA_VERTEX_MAPPING.clear();
+    SAVA_EDGES.clear();
     SAVA_NUM_WORKER = 0;
     for (auto x : member_list) {
         if (master_list.find(x.first) != master_list.end()) continue;

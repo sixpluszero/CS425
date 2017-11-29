@@ -2,7 +2,6 @@
 
 void Daemon::savaInitPregelMaster() {
     string ack;
-
     SAVA_WORKER_CONN.clear();
     for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
         TCPSocket *sock_w = new TCPSocket(member_list[SAVA_WORKER_MAPPING[i]].ip, BASEPORT + 4);
@@ -40,6 +39,7 @@ int  Daemon::savaMasterSuperstep() {
      * (4) Distributed msgs to target worker
      * (5) Receive active node number from each worker
      * (6) Decide whether to stop
+     * (7) Gather result
      */
 
     FILE *fp;
@@ -52,7 +52,6 @@ int  Daemon::savaMasterSuperstep() {
     SAVA_WORKER_CONN.clear();
     for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
         TCPSocket *sock_w = new TCPSocket(member_list[SAVA_WORKER_MAPPING[i]].ip, BASEPORT + 4);
-        //sock_w->sendStr("savaclientinit");
         SAVA_WORKER_CONN[i] = sock_w;        
         ths.push_back(std::thread(&Daemon::savaMasterSuperstepThread, this, i));
     }
@@ -61,7 +60,6 @@ int  Daemon::savaMasterSuperstep() {
 
     SAVA_REMOTE_MSGS.clear();
     for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
-
         fname = "./mp4/tmp/rmsg_in_" + std::to_string(i) + ".txt";
         fp = fopen(fname.c_str(), "r");
         if (fp == NULL) continue;
@@ -85,7 +83,7 @@ int  Daemon::savaMasterSuperstep() {
         for (auto x : SAVA_REMOTE_MSGS) {
             if (SAVA_VERTEX_MAPPING[x.first] != i) continue;
             fprintf(fp, "%d %lu", x.first, x.second.size());
-            for (int w = 0; w < x.second.size(); w++) {
+            for (size_t w = 0; w < x.second.size(); w++) {
                 fprintf(fp, " %lf", x.second[w]);
             }
             fprintf(fp, "\n");

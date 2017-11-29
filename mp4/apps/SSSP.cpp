@@ -13,5 +13,4 @@ void Vertex::Compute(MessageIterator msgs) {
             SendMessageTo(x.Dst(), minDist + x.Value());
         }
     }
-    
 }
