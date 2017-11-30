@@ -54,6 +54,10 @@ void Daemon::savaHandler(TCPSocket *sock) {
             SAVA_COMBINATOR = msg.substr(msg.find(";")+1, msg.length());
         } else if (prefixMatch(info, "savaclientinit")) {
             SAVA_NUM_VERTICES = stoi(info.substr(info.find(";")+1, info.length()));
+            sock->sendStr("ack");
+            sock->recvFile("./mp4/sava/fullwmap.txt");
+            sock->sendStr("ack");
+            sock->recvFile("./mp4/sava/fullvmap.txt");
             savaInitPregelClient();
             sock->sendStr("ack");
         } else if (prefixMatch(info, "savaclientstep")) {
@@ -71,7 +75,13 @@ void Daemon::savaHandler(TCPSocket *sock) {
             } else {
                 savaClientResult(sock, 0, 0);
             }
-
+        } else if (prefixMatch(info, "savaworkermsgs")) {
+            info = info.substr(info.find(";")+1, info.length());
+            string fname = "./mp4/sava/rmsgs_" + info.substr(0, 1) + ".txt";
+            sock->recvFile(fname);
+            msg_lock.lock();
+            SAVA_NUM_MSG++;
+            msg_lock.unlock();
         } else {
             sock->sendStr("ack");
             return;

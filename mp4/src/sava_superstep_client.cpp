@@ -6,9 +6,14 @@ void Daemon::savaInitPregelClient() {
     int id, src, num, dst;
     double value;
 
+    SAVA_NUM_MSG = 0;
+    SAVA_VERTEX_MAPPING.clear();
+    SAVA_WORKER_MAPPING.clear();
     PREGEL_IN_MESSAGES.clear();
     PREGEL_OUT_MESSAGES.clear();
     PREGEL_LOCAL_VERTICES.clear();
+    PREGEL_LOCAL_EDGES.clear();
+
     fname = "./mp4/sava/vertices.txt";
     fp = fopen(fname.c_str(), "r");
     while (fscanf(fp, "%d", &id) != EOF) {
@@ -17,7 +22,6 @@ void Daemon::savaInitPregelClient() {
     fclose(fp);
     plog("init vertices");
     
-    PREGEL_LOCAL_EDGES.clear();
     fname = "./mp4/sava/edges.txt";
     fp = fopen(fname.c_str(), "r");
     while (fscanf(fp, "%d %d", &src, &num) != EOF) {
@@ -32,7 +36,50 @@ void Daemon::savaInitPregelClient() {
     }
     fclose(fp);
     plog("init edges");
+
+    fname = "./mp4/sava/fullvmap.txt";
+    fp = fopen(fname.c_str(), "r");
+    while (fscanf(fp, "%d %d", &src, &dst) != EOF) {
+        SAVA_VERTEX_MAPPING[src] = dst;
+    }
+    fclose(fp);
+    plog("init vertex mappings: %d vertices.", SAVA_VERTEX_MAPPING.size());
+
+    fname = "./mp4/sava/fullwmap.txt";
+    fp = fopen(fname.c_str(), "r");
+    while (fscanf(fp, "%d %d", &src, &dst) != EOF) {
+        SAVA_WORKER_MAPPING[src] = dst;
+        plog("worker %d -> member %d", src, dst);
+    }
+    fclose(fp);
+    SAVA_NUM_WORKER = SAVA_WORKER_MAPPING.size();
+    plog("init worker mappings");
+        
     SAVA_ROUND = 0;
+}
+
+void Daemon::pregelInitStep() {
+    SAVA_NUM_MSG = 0;
+    SAVA_WORKER_CONN.clear();
+
+
+    for (auto x : SAVA_WORKER_MAPPING) {
+        if (x.second == self_index) {
+            SAVA_WORKER_ID = x.first;
+        }
+    }
+
+    plog("Worker ID is %d", SAVA_WORKER_ID);
+    for (auto x : SAVA_WORKER_MAPPING) {
+        if (x.second == self_index) {
+            SAVA_WORKER_CONN[x.first] = NULL;
+        } else {
+            SAVA_WORKER_CONN[x.first] = new TCPSocket(member_list[x.second].ip, BASEPORT + 4);
+            string cmd = "savaworkermsgs;" + to_string(SAVA_WORKER_ID);
+            SAVA_WORKER_CONN[x.first]->sendStr(cmd);
+            plog(cmd.c_str());
+        }
+    }
 }
 
 void Daemon::pregelWriteVertices() {
@@ -113,7 +160,7 @@ void Daemon::pregelReadVertices() {
     fname = "./mp4/sava/newvtxs_"+ std::to_string(SAVA_ROUND) + ".txt";
     fp = fopen(fname.c_str(), "r");
     if (fp == NULL) {
-        plog("readVertices  it is null");
+        plog("readVertices file is null");
     }
     int id;
     double value;
@@ -194,47 +241,66 @@ void Daemon::pregelCombineMessages() {
 }
 
 void Daemon::pregelGenRemoteMessages() {
-    FILE *fp;
-    string fname;
-    fname = "./mp4/sava/outmsgs.txt";
-    fp = fopen(fname.c_str(), "w");
-    for (auto x : PREGEL_OUT_MESSAGES) {
-        fprintf(fp, "%d %lu", x.first, x.second.size());
-        for (size_t i = 0; i < x.second.size(); i++) {
-            fprintf(fp, " %f", x.second[i].Value());
-        }
-        fprintf(fp, "\n");
+
+    FILE *fps[SAVA_NUM_WORKER];
+    for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
+        if (i == SAVA_WORKER_ID) continue;
+        string fname = "./mp4/sava/outmsgs_" + to_string(i) + ".txt";
+        fps[i-1] = fopen(fname.c_str(), "w");
     }
-    fclose(fp);
+
+    for (auto x : PREGEL_OUT_MESSAGES) {
+        int idx = SAVA_VERTEX_MAPPING[x.first]-1;
+        fprintf(fps[idx], "%d %lu", x.first, x.second.size());
+        for (size_t i = 0; i < x.second.size(); i++) {
+            fprintf(fps[idx], " %f", x.second[i].Value());
+        }
+        fprintf(fps[idx], "\n");
+    }
+
+    for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
+        if (i == SAVA_WORKER_ID) continue;
+        fclose(fps[i-1]);
+        string fname = "./mp4/sava/outmsgs_" + to_string(i) + ".txt";
+        SAVA_WORKER_CONN[i]->sendFile(fname);
+    }
 }
 
 void Daemon::pregelReadRemoteMessages() {
     FILE *fp;
     string fname;
-
-    fname = "./mp4/sava/rnewmsgs_" + std::to_string(SAVA_ROUND) + ".txt";
-    fp = fopen(fname.c_str(), "r");
-    if (fp == NULL) return;
-    int id, num;
-    double value;
-    while (fscanf(fp, "%d %d", &id, &num) != EOF) {
-        if (PREGEL_LOCAL_VERTICES.find(id) == PREGEL_LOCAL_VERTICES.end()) {
-            // Actually it is exception
-            continue;
-        } else {
-            if (PREGEL_IN_MESSAGES.find(id) == PREGEL_IN_MESSAGES.end()) {
-                vector<Message> tmp;
-                PREGEL_IN_MESSAGES[id] = tmp;
+    int cnt, total_cnt = 0;
+    while (SAVA_NUM_MSG != (SAVA_NUM_WORKER - 1));
+    for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
+        if (i == SAVA_WORKER_ID) continue;
+        fname = "./mp4/sava/rmsgs_" + std::to_string(i) + ".txt";
+        fp = fopen(fname.c_str(), "r");
+        if (fp == NULL) continue;
+        int id, num;
+        double value;
+        cnt = 0;
+        while (fscanf(fp, "%d %d", &id, &num) != EOF) {
+            total_cnt++;
+            if (PREGEL_LOCAL_VERTICES.find(id) == PREGEL_LOCAL_VERTICES.end()) {
+                // Actually it is exception
+                plog("Error in rmsg vtx %d", id);
+                continue;
+            } else {
+                cnt++;
+                if (PREGEL_IN_MESSAGES.find(id) == PREGEL_IN_MESSAGES.end()) {
+                    vector<Message> tmp;
+                    PREGEL_IN_MESSAGES[id] = tmp;
+                }
+                for (int i = 0; i < num; i++) {
+                    fscanf(fp, "%lf", &value);
+                    PREGEL_IN_MESSAGES[id].push_back(value);
+                }
             }
-            for (int i = 0; i < num; i++) {
-                fscanf(fp, "%lf", &value);
-                PREGEL_IN_MESSAGES[id].push_back(value);
-            }
-            //plog("%d's %d msg read.", id, num); 
         }
-
+        plog("Read %s's %d msgs", fname.c_str(), cnt);
+        fclose(fp);
     }
-    fclose(fp);
+    plog("Read %d msgs in total.", total_cnt);
 }
 
 int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
@@ -242,48 +308,18 @@ int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
     SAVA_ROUND = step;
     plog("ROUND: %d", SAVA_ROUND);
     plog("Using combinator: %s", SAVA_COMBINATOR.c_str());
+    pregelInitStep();
     pregelWriteEdges();
     pregelWriteMessages();
     pregelWriteVertices();
-    //auto start = std::chrono::system_clock::now();
     pregelExecution();
-    //auto end = std::chrono::system_clock::now();
-    //std::chrono::duration<double> dif = end - start;
-    //plog("Finish execution using %lf seconds", dif.count());
     pregelReadVertices();
-    auto start = std::chrono::system_clock::now();
     pregelReadLocalMessages();
     pregelCombineMessages();
     pregelGenRemoteMessages();
-    auto end = std::chrono::system_clock::now();
-    auto dif = end - start;
-    plog("Update local msgs/generate remote msgs using %lf seconds", dif.count());
-    plog("Finish update local");
-
-    start = std::chrono::system_clock::now();
-    fname = "./mp4/sava/outmsgs.txt";
-    if (sock->sendFile(fname.c_str()) == 0) {
-        plog("Finish send msgs");
-        system("rm ./mp4/sava/outmsgs.txt");
-    } else {
-        plog("Error in sending msgs");
-        return 1;
-    }
-    
-    fname = "./mp4/sava/rnewmsgs_" + std::to_string(SAVA_ROUND) + ".txt";
-    if (sock->recvFile(fname.c_str()) == 0) {
-        plog("Finish recv msgs");
-    } else {
-        plog("Error in receiving msgs");
-        return 1;
-    }
     pregelReadRemoteMessages();
-    end = std::chrono::system_clock::now();
-    dif = end - start;
-    plog("Send/Receive/Update remote msgs using %lf seconds", dif.count());
-
-    plog("Finish update remote");
-    
+    system("mv ./mp4/sava/rmsgs_*.txt ./mp4/tmp/rmsgs_*.txt");
+    system("mv ./mp4/sava/outmsgs_*.txt ./mp4/tmp/outmsgs_*.txt");
     sock->sendStr(to_string(PREGEL_IN_MESSAGES.size()));
     return 0;
 }

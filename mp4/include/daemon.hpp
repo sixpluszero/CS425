@@ -43,6 +43,7 @@ private:
 	long long local_timestamp;
 	mutex member_lock;
 	mutex log_lock;
+	mutex msg_lock; // Log for SAVA worker inter communication.
 	string role;
 	map<int, string> master_list;
 	map<string, map<int, long long> > file_location;
@@ -58,12 +59,13 @@ private:
 	int SAVA_STATE; // 0: Init, 1: Running, 2: Stop
 	int SAVA_NUM_WORKER;
 	int SAVA_NUM_VERTICES;
+	int SAVA_WORKER_ID;
+	int SAVA_NUM_MSG;
 	map<int, int> SAVA_VERTEX_MAPPING;
 	map<int, int> SAVA_WORKER_MAPPING;
 	map<int, vector<int>> SAVA_EDGES;
-	map<int, TCPSocket *> SAVA_WORKER_CONN;
+	map<int, TCPSocket* > SAVA_WORKER_CONN;
 	map<int, vector<double>> SAVA_REMOTE_MSGS;
-	vector<map<int, vector<double>>> SAVA_RMSGS;
 
 	map<int, double> PREGEL_LOCAL_VERTICES;
 	map<int, vector<Edge>> PREGEL_LOCAL_EDGES;
@@ -105,6 +107,7 @@ public:
 	void savaClientResult(TCPSocket *sock, int type, int num);
 	void savaHandler(TCPSocket *sock);
 	void savaTask(TCPSocket *sock, string app, string input, string output, string comb);
+	void pregelInitStep();
     void pregelWriteEdges();
     void pregelWriteMessages();
     void pregelWriteVertices();

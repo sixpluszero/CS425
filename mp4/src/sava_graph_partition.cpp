@@ -21,7 +21,6 @@ int Daemon::savaPartitionGraph() {
         if (master_list.find(x.first) != master_list.end()) continue;
         SAVA_WORKER_MAPPING[++SAVA_NUM_WORKER] = x.first;
     }
-    
     plog("Worker number: %d", SAVA_NUM_WORKER);
 
     fp = fopen("./mp4/tmp/tmpgraph", "r");
@@ -29,10 +28,12 @@ int Daemon::savaPartitionGraph() {
     srand(time(NULL));
     while (fscanf(fp, "%d %d", &x, &y) != EOF) {
         if (SAVA_VERTEX_MAPPING.find(x) == SAVA_VERTEX_MAPPING.end()) {
-            SAVA_VERTEX_MAPPING[x] = rand() % SAVA_NUM_WORKER + 1;
+            //SAVA_VERTEX_MAPPING[x] = rand() % SAVA_NUM_WORKER + 1;
+            SAVA_VERTEX_MAPPING[x] = x % SAVA_NUM_WORKER + 1;
         }
         if (SAVA_VERTEX_MAPPING.find(y) == SAVA_VERTEX_MAPPING.end()) {
-            SAVA_VERTEX_MAPPING[y] = rand() % SAVA_NUM_WORKER + 1;
+            //SAVA_VERTEX_MAPPING[y] = rand() % SAVA_NUM_WORKER + 1;
+            SAVA_VERTEX_MAPPING[y] = y % SAVA_NUM_WORKER + 1;
         }
 
         if (SAVA_EDGES.find(x) == SAVA_EDGES.end()) {

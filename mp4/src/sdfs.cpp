@@ -37,6 +37,7 @@ void Daemon::replicateFile(TCPSocket *sock, string input) {
  *  fixReplication() starts re-replication issued by master 
  */
 void Daemon::fixReplication(){
+  return;
   plog("start fixing replication");
   for (auto it = file_location.begin(); it != file_location.end(); it++) {
     if (it->second.size() == REPLICA) continue;
