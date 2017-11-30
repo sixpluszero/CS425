@@ -63,6 +63,7 @@ private:
 	map<int, vector<int>> SAVA_EDGES;
 	map<int, TCPSocket *> SAVA_WORKER_CONN;
 	map<int, vector<double>> SAVA_REMOTE_MSGS;
+	vector<map<int, vector<double>>> SAVA_RMSGS;
 
 	map<int, double> PREGEL_LOCAL_VERTICES;
 	map<int, vector<Edge>> PREGEL_LOCAL_EDGES;

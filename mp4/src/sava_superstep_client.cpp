@@ -230,7 +230,7 @@ void Daemon::pregelReadRemoteMessages() {
                 fscanf(fp, "%lf", &value);
                 PREGEL_IN_MESSAGES[id].push_back(value);
             }
-            plog("%d's %d msg read.", id, num); 
+            //plog("%d's %d msg read.", id, num); 
         }
 
     }
@@ -245,15 +245,22 @@ int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
     pregelWriteEdges();
     pregelWriteMessages();
     pregelWriteVertices();
-    plog("Finish writing files");
+    //auto start = std::chrono::system_clock::now();
     pregelExecution();
-    plog("Finish execution");
+    //auto end = std::chrono::system_clock::now();
+    //std::chrono::duration<double> dif = end - start;
+    //plog("Finish execution using %lf seconds", dif.count());
     pregelReadVertices();
+    auto start = std::chrono::system_clock::now();
     pregelReadLocalMessages();
     pregelCombineMessages();
     pregelGenRemoteMessages();
+    auto end = std::chrono::system_clock::now();
+    auto dif = end - start;
+    plog("Update local msgs/generate remote msgs using %lf seconds", dif.count());
     plog("Finish update local");
 
+    start = std::chrono::system_clock::now();
     fname = "./mp4/sava/outmsgs.txt";
     if (sock->sendFile(fname.c_str()) == 0) {
         plog("Finish send msgs");
@@ -271,6 +278,10 @@ int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
         return 1;
     }
     pregelReadRemoteMessages();
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    plog("Send/Receive/Update remote msgs using %lf seconds", dif.count());
+
     plog("Finish update remote");
     
     sock->sendStr(to_string(PREGEL_IN_MESSAGES.size()));
