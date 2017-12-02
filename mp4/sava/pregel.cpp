@@ -154,12 +154,42 @@ int main(int argc, char *argv[]) {
      */
 
     init(argc, argv);
+    printf("round: %d\n", SUPERSTEP);
+    auto start = std::chrono::system_clock::now();
     readVertices();
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> dif = end - start;
+    printf("read vtx takes %lf sec\n", dif.count());
+
+    start = std::chrono::system_clock::now();
     readMessages();
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    printf("read msg takes %lf sec\n", dif.count());
+
+    start = std::chrono::system_clock::now();
     readEdges();
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    printf("read edg takes %lf sec\n", dif.count());
+    
+    start = std::chrono::system_clock::now();
     execution();
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    printf("exec takes %lf sec\n", dif.count());
+    
+    start = std::chrono::system_clock::now();
     combine();
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    printf("combine takes %lf sec\n", dif.count());
+    
+    start = std::chrono::system_clock::now();
     output();
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    printf("output takes %lf sec\n", dif.count());
 
     return 0;
 }

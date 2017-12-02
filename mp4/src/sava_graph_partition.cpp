@@ -28,12 +28,12 @@ int Daemon::savaPartitionGraph() {
     srand(time(NULL));
     while (fscanf(fp, "%d %d", &x, &y) != EOF) {
         if (SAVA_VERTEX_MAPPING.find(x) == SAVA_VERTEX_MAPPING.end()) {
-            //SAVA_VERTEX_MAPPING[x] = rand() % SAVA_NUM_WORKER + 1;
-            SAVA_VERTEX_MAPPING[x] = x % SAVA_NUM_WORKER + 1;
+            SAVA_VERTEX_MAPPING[x] = rand() % SAVA_NUM_WORKER + 1;
+            //SAVA_VERTEX_MAPPING[x] = x % SAVA_NUM_WORKER + 1;
         }
         if (SAVA_VERTEX_MAPPING.find(y) == SAVA_VERTEX_MAPPING.end()) {
-            //SAVA_VERTEX_MAPPING[y] = rand() % SAVA_NUM_WORKER + 1;
-            SAVA_VERTEX_MAPPING[y] = y % SAVA_NUM_WORKER + 1;
+            SAVA_VERTEX_MAPPING[y] = rand() % SAVA_NUM_WORKER + 1;
+            //SAVA_VERTEX_MAPPING[y] = y % SAVA_NUM_WORKER + 1;
         }
 
         if (SAVA_EDGES.find(x) == SAVA_EDGES.end()) {
@@ -43,12 +43,13 @@ int Daemon::savaPartitionGraph() {
         SAVA_EDGES[x].push_back(y);
 
         if (SAVA_GRAPH == 1) continue;
-
+        
         if (SAVA_EDGES.find(y) == SAVA_EDGES.end()) {
             vector<int> tmp;
             SAVA_EDGES[y] = tmp;
         }
         SAVA_EDGES[y].push_back(x);
+        
     }
     fclose(fp);
 
@@ -73,7 +74,7 @@ int Daemon::savaPartitionGraph() {
 
         TCPSocket sock_w(member_list[SAVA_WORKER_MAPPING[i]].ip, BASEPORT + 4);
 
-        cmd = "savasendinputs;";
+        cmd = "savasendinput;";
         sock_w.sendStr(cmd.c_str());
         sock_w.recvStr(ack);
         fname = "./mp4/tmp/part_v.txt";

@@ -49,8 +49,9 @@ int Daemon::savaMasterSuperstep() {
      * (7) Gather result
      */
     string fname, msg, ack;
-    int count;
+    int count, ret;
 
+    ret = 0;
     SAVA_WORKER_CONN.clear();
     for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
         SAVA_WORKER_CONN[i] = new TCPSocket(member_list[SAVA_WORKER_MAPPING[i]].ip, BASEPORT + 4);
@@ -61,6 +62,7 @@ int Daemon::savaMasterSuperstep() {
     for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
         if (SAVA_WORKER_CONN[i]->recvStr(ack)) {
             plog("Error in connection with %d", i);
+            ret = 1;
         } else {
             plog("Recv %s active nodes from %d", ack.c_str(), i);
             count += stoi(ack);
@@ -69,6 +71,6 @@ int Daemon::savaMasterSuperstep() {
     plog("Active nodes after this round is %d", count);
     if (count == 0) SAVA_STATE = 2;
 
-    return 0;
+    return ret;
 }
 

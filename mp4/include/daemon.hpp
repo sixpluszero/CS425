@@ -14,6 +14,7 @@
 #include "node.hpp"
 #include "config.hpp"
 #include "pregel.hpp"
+#include "signal.h"
 #include <fstream>
 #include <chrono>
 #define NODE 10
@@ -21,7 +22,7 @@
 #define INTRODUCER 10
 #define HEARTBEAT 200000 	// (1/1000000 sec) Period for heartbeat() to wakeup and scan
 #define SCAN 1000000 		// (1/1000000 sec) Period for timeout() to wakeup and scan
-#define FAILURE 15000 		// (1/1000 sec) Time for timeout() to detect the failure
+#define FAILURE 2000 		// (1/1000 sec) Time for timeout() to detect the failure
 #define NUMMASTER 2
 #define REPLICA 3
 using namespace std;
@@ -77,60 +78,61 @@ public:
 	Daemon(int flag);
 	
 	/* First level functions */
- 	void timeout(); // check whether its neighbors are down	
-	void heartbeat(); // send hb to contacts
-	void join(); // send join request to introducer, receive membership list
-	void command(); // send leave message to contacts
-	void receive(); // listen to all membership related messages
-	void sdfs(); // handle file related events
+ 	void 	timeout(); // check whether its neighbors are down	
+	void 	heartbeat(); // send hb to contacts
+	void 	join(); // send join request to introducer, receive membership list
+	void 	command(); // send leave message to contacts
+	void 	receive(); // listen to all membership related messages
+	void 	sdfs(); // handle file related events
 	
 	/* Master functions */
-	bool isPrimary();
-	bool isBackup();
-	bool isMaster();
-	bool hasPrimary();
-	bool isFirstBackup();
-	void assignBackup(int num);
-	void upgradeBackup();
+	bool 	isPrimary();
+	bool 	isBackup();
+	bool 	isMaster();
+	bool 	hasPrimary();
+	bool 	isFirstBackup();
+	void 	assignBackup(int num);
+	void 	upgradeBackup();
 
 	/* Sava functions */
-	void sava();
-	int  savaCompile();
-	void savaReplicateMeta();
-	int	 savaPartitionGraph();
-	void savaInitPregelMaster();
-	void savaInitPregelClient();
-	int  savaMasterSuperstep();
-	void savaMasterSuperstepThread(int wid);
-	string savaMasterGetTopResult(int topN, int recv);
-	int  savaClientSuperstep(TCPSocket *sock, int step);
-	void savaClientResult(TCPSocket *sock, int type, int num);
-	void savaHandler(TCPSocket *sock);
-	void savaTask(TCPSocket *sock, string app, string input, string output, string comb);
-	void pregelInitStep();
-    void pregelWriteEdges();
-    void pregelWriteMessages();
-    void pregelWriteVertices();
-    void pregelExecution();
-    void pregelReadVertices();
-    void pregelReadLocalMessages();
-	void pregelCombineMessages();
-    void pregelGenRemoteMessages();
-    void pregelReadRemoteMessages();
+	void  	sava();
+	int  	savaComplieApp(TCPSocket *sock);
+	int  	savaCompile();
+	int  	savaReplicateMeta();
+	int	 	savaPartitionGraph();
+	void 	savaInitPregelMaster();
+	void 	savaInitPregelClient();
+	int  	savaMasterSuperstep();
+	void 	savaMasterSuperstepThread(int wid);
+	string 	savaMasterGetTopResult(int topN, int recv);
+	int  	savaClientSuperstep(TCPSocket *sock, int step);
+	void 	savaClientResult(TCPSocket *sock, int type, int num);
+	void 	savaHandler(TCPSocket *sock);
+	int 	savaTask(TCPSocket *sock, string app, string input, string output, string comb);
+	void 	pregelInitStep();
+    void 	pregelWriteEdges();
+    void 	pregelWriteMessages();
+    void 	pregelWriteVertices();
+    void 	pregelExecution();
+    void 	pregelReadVertices();
+    void 	pregelReadLocalMessages();
+	void 	pregelCombineMessages();
+    void 	pregelGenRemoteMessages();
+    void 	pregelReadRemoteMessages();
 
 	/* File functions */
-	void clearNodeFile(int id);
-	void initFileMapping();
-	string fileMappingToString();
-	void newFileMapping(string input);
-	void newFileMappingLocation(string input);
-	bool hasFile(string fname);
-	int replicaCount(string fname);
-	long long fileLatestTime(string fanme);
+	void 		clearNodeFile(int id);
+	void 		initFileMapping();
+	string 		fileMappingToString();
+	void 		newFileMapping(string input);
+	void 		newFileMappingLocation(string input);
+	bool 		hasFile(string fname);
+	int 		replicaCount(string fname);
+	long long 	fileLatestTime(string fanme);
 
-	void fixReplication();
-	void replicateFile(TCPSocket *sock, string input);
-	int putFile(TCPSocket *sock, string fname);
+	void 		fixReplication();
+	void 		replicateFile(TCPSocket *sock, string input);
+	int 		putFile(TCPSocket *sock, string fname);
 
 	void clientPut(TCPSocket *sock, string fname);
 	void clientGet(TCPSocket *sock, string fname);
@@ -140,26 +142,24 @@ public:
 	void sdfsHandler(TCPSocket *sock);
 
 	/* Membership functions */
-	int newMember(char * remote_ip);
-	void updateContact(long long ts);
-	void setMemberList(string s);
-	void setMasterList(string s);
-	string contactsToString();
-	string membersToString();
-	string mastersToString();
+	int 	newMember(char * remote_ip);
+	void 	updateContact(long long ts);
+	void 	setMemberList(string s);
+	void 	setMasterList(string s);
+	string 	contactsToString();
+	string	membersToString();
+	string 	mastersToString();
 
 	/* Utility funcitons */
-	long long unixTimestamp();
-	void log(string s, int flag = 0);
-	void log(const char *fmt, ...);
-	void plog(string s);
-	void plog(const char *fmt, ...);
-	void setSelfAddr();
-	void setLogFile();
-	bool dropMsg();
-	void tcpSendString(TCPSocket *sock, string in);
-	string tcpRecvString(TCPSocket *sock);
-	bool prefixMatch(string org, string patt);
+	long long 	unixTimestamp();
+	void 		log(string s, int flag = 0);
+	void 		log(const char *fmt, ...);
+	void 		plog(string s);
+	void 		plog(const char *fmt, ...);
+	void 		setSelfAddr();
+	void 		setLogFile();
+	bool 		dropMsg();
+	bool 		prefixMatch(string org, string patt);
 
 	/* Receiver handler functions */
 	void joinHandler(char *remote_ip);

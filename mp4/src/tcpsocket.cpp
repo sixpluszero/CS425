@@ -7,6 +7,7 @@
 #include <netinet/in.h>      // For sockaddr_in
 typedef void raw_type;       // Type used for raw data on this platform
 #include <errno.h>             // For errno
+#include <signal.h>
 
 using namespace std;
 
@@ -58,11 +59,7 @@ Socket::Socket(int sockDesc) {
 }
 
 Socket::~Socket() {
-  #ifdef WIN32
-  ::closesocket(sockDesc);
-  #else
   ::close(sockDesc);
-  #endif
   sockDesc = -1;
 }
 
@@ -93,9 +90,13 @@ void Socket::setLocalPort(unsigned short localPort) throw(SocketException) {
   localAddr.sin_family = AF_INET;
   localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
   localAddr.sin_port = htons(localPort);
+  int enable = 1;
+  if (setsockopt(sockDesc, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+    printf("setsockopt(SO_REUSEADDR) failed\n");
+  }
 
   if (bind(sockDesc, (sockaddr *) &localAddr, sizeof(sockaddr_in)) < 0) {
-  throw SocketException("Set of local port failed (bind())", true);
+    throw SocketException("Set of local port failed (bind())", true);
   }
 }
 
@@ -106,16 +107,11 @@ void Socket::setLocalAddressAndPort(const string &localAddress,
   fillAddr(localAddress, localPort, localAddr);
 
   if (bind(sockDesc, (sockaddr *) &localAddr, sizeof(sockaddr_in)) < 0) {
-  throw SocketException("Set of local address and port failed (bind())", true);
+    throw SocketException("Set of local address and port failed (bind())", true);
   }
 }
 
 void Socket::cleanUp() throw(SocketException) {
-  #ifdef WIN32
-  if (WSACleanup() != 0) {
-    throw SocketException("WSACleanup() failed");
-  }
-  #endif
 }
 
 unsigned short Socket::resolveService(const string &service,
@@ -137,22 +133,20 @@ CommunicatingSocket::CommunicatingSocket(int type, int protocol)
 CommunicatingSocket::CommunicatingSocket(int newConnSD) : Socket(newConnSD) {
 }
 
-void CommunicatingSocket::connect(const string &foreignAddress,
-  unsigned short foreignPort) throw(SocketException) {
+void CommunicatingSocket::connect(const string &foreignAddress, unsigned short foreignPort) throw(SocketException) {
   // Get the address of the requested host
   sockaddr_in destAddr;
   fillAddr(foreignAddress, foreignPort, destAddr);
 
   // Try to connect to the given port
   if (::connect(sockDesc, (sockaddr *) &destAddr, sizeof(destAddr)) < 0) {
-  throw SocketException("Connect failed (connect())", true);
+    throw SocketException("Connect failed (connect())", true);
   }
 }
 
-void CommunicatingSocket::send(const void *buffer, int bufferLen) 
-  throw(SocketException) {
+void CommunicatingSocket::send(const void *buffer, int bufferLen) throw(SocketException) {
   if (::send(sockDesc, (raw_type *) buffer, bufferLen, 0) < 0) {
-  throw SocketException("Send failed (send())", true);
+    throw SocketException("Send failed (send())", true);
   }
 }
 
@@ -295,10 +289,14 @@ int TCPSocket::sendFile(string fname) {
       bytesRead = fread(buffer, 1, TCPBUFSIZE, fp);
       buffer[bytesRead] = '\0';
       total += bytesRead;
-      send(buffer, bytesRead);
+      try {
+        send(buffer, bytesRead);
+      } catch (...) {
+        return 1;
+      }
       if (bytesRead < TCPBUFSIZE) break;
     }
-  } catch(...) {
+  } catch (...) {
     fclose(fp);
     return 1;
   }

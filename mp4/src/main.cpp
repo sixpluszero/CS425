@@ -2,6 +2,7 @@
 using namespace std;
 
 int main(int argc, char* argv[]){
+  signal(SIGPIPE, SIG_IGN);
   int flag = 0;
   if (argc > 1) flag = 1;
   Daemon myServer(flag);

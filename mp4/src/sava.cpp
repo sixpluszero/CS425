@@ -13,8 +13,22 @@ int Daemon::savaCompile() {
     return 0;
 }
 
+int Daemon::savaComplieApp(TCPSocket *sock) {
+    // Ask for client code
+    if (sock->recvFile("./mp4/sava/client.cpp") == 1) return 1;
+    plog("Client code received.");
+    // Compile client to get the binary
+    if (savaCompile()) {
+        sock->sendStr("error: cannot compile source code.");
+        return 1;
+    }
+    plog("Client code compiled.");
+    return 0;
+}
+
+
 /* TODO: This function is buggy */
-void Daemon::savaReplicateMeta() {
+int Daemon::savaReplicateMeta() {
     string ack, fname;
     for (auto x : master_list) {
         if (x.second == "Backup") {
@@ -23,21 +37,27 @@ void Daemon::savaReplicateMeta() {
             msg += SAVA_INPUT + ";";
             msg += SAVA_OUTPUT + ";";
             msg += SAVA_COMBINATOR + ";";
+            msg += to_string(SAVA_STATE) + ";";
+            msg += to_string(SAVA_ROUND) + ";";
             plog("Try sending %s to %s", msg.c_str(), member_list[x.first].ip.c_str());
             TCPSocket sock_b(member_list[x.first].ip, BASEPORT + 4);
             if (sock_b.sendStr(msg)) {
                 plog("Error in replicating meta data from primary to backup master");
-                return;
+                return 1;
             }
             sock_b.recvStr(ack);
             fname = "./mp4/sava/runner";
             if (sock_b.sendFile(fname.c_str())) {
                 plog("Error in replicating meta data from primary to backup master");
-                return;
+                return 1;
             };
             sock_b.recvStr(ack);
+
+            // We only have 1 standby master.
+            return 0;
         }
     }
+    return 0;
 }
 
 string Daemon::savaMasterGetTopResult(int topN, int rev) {
@@ -89,7 +109,7 @@ string Daemon::savaMasterGetTopResult(int topN, int rev) {
     return res;
 }
 
-void Daemon::savaTask(TCPSocket *sock, string app, string input, string output, string comb) {
+int Daemon::savaTask(TCPSocket *sock, string app, string input, string output, string comb) {
     double total_time;
     string cmd, ack;
 
@@ -104,18 +124,9 @@ void Daemon::savaTask(TCPSocket *sock, string app, string input, string output, 
 
     total_time = 0;
     auto start = std::chrono::system_clock::now();
-    // Ask for client code
-    if (sock->recvFile("./mp4/sava/client.cpp") == 1) return;
-    plog("Client code received.");
-    // Compile client to get the binary
-    if (savaCompile()) {
-        sock->sendStr("error: cannot compile source code.");
-        return;
-    }
-    plog("Client code compiled.");
     // Replicate to standby master
-    // savaReplicateMeta();
-    plog("Replication metadata to standby master completed.");
+    //savaReplicateMeta();
+    plog("[TODO]Replication metadata to standby master completed.");
     auto end = std::chrono::system_clock::now();
     std::chrono::duration<double> dif = end - start;
     total_time += dif.count();
@@ -142,7 +153,11 @@ void Daemon::savaTask(TCPSocket *sock, string app, string input, string output, 
     // Start superstep computation;
     while (SAVA_STATE != 2) {
         start = std::chrono::system_clock::now();
-        savaMasterSuperstep();        
+        if (savaMasterSuperstep()) {
+            SAVA_STATE = 1;
+            plog("Encounter error in %d round", SAVA_ROUND);
+            break;
+        }
         end = std::chrono::system_clock::now();
         dif = end - start;
         total_time += dif.count();
@@ -152,8 +167,19 @@ void Daemon::savaTask(TCPSocket *sock, string app, string input, string output, 
         sock->recvStr(ack);
         SAVA_ROUND++;
     }
-    
-    start = std::chrono::system_clock::now();
+
+    if (SAVA_STATE == 1) {
+        plog("About to stop");
+        usleep(2000000);
+        plog("Current cluster size: %d", member_list.size());
+        plog(membersToString());
+        plog("Task failed. Restarting");
+        sock->sendStr("Task failed. Restarting");
+        sock->recvStr(ack);
+        //sock->sendStr("error");
+        return 1;
+    }
+    //start = std::chrono::system_clock::now();
     if (prefixMatch(SAVA_OUTPUT, "TOP+")) {
         // Gather the topX(min) result
         int topN = stoi(SAVA_OUTPUT.substr(4, SAVA_OUTPUT.length()));
@@ -171,14 +197,15 @@ void Daemon::savaTask(TCPSocket *sock, string app, string input, string output, 
         sock->sendStr("Result stored in SDFS");
         sock->recvStr(ack);
     }
-    end = std::chrono::system_clock::now();
-    dif = end - start;
-    total_time += dif.count();
-    plog("Result processing time %f", SAVA_ROUND, dif.count());
-    cmd = "Result processing time " + to_string(dif.count()) + "/" + to_string(total_time);
-    sock->sendStr(cmd);
-    sock->recvStr(ack);
+    //end = std::chrono::system_clock::now();
+    //dif = end - start;
+    //total_time += dif.count();
+    //plog("Result processing time %f", SAVA_ROUND, dif.count());
+    //cmd = "Result processing time " + to_string(dif.count()) + "/" + to_string(total_time);
+    //sock->sendStr(cmd);
+    //sock->recvStr(ack);
     sock->sendStr("finish");
+    return 0;
     
 }
 

@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <assert.h>
+#include <chrono>
 #include "pregel.hpp"
 using namespace std;
 

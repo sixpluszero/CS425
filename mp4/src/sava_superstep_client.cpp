@@ -59,9 +59,9 @@ void Daemon::savaInitPregelClient() {
 }
 
 void Daemon::pregelInitStep() {
+    string cmd, ack;
     SAVA_NUM_MSG = 0;
     SAVA_WORKER_CONN.clear();
-
 
     for (auto x : SAVA_WORKER_MAPPING) {
         if (x.second == self_index) {
@@ -75,8 +75,9 @@ void Daemon::pregelInitStep() {
             SAVA_WORKER_CONN[x.first] = NULL;
         } else {
             SAVA_WORKER_CONN[x.first] = new TCPSocket(member_list[x.second].ip, BASEPORT + 4);
-            string cmd = "savaworkermsgs;" + to_string(SAVA_WORKER_ID);
+            cmd = "savaworkermsgs;" + to_string(SAVA_WORKER_ID);
             SAVA_WORKER_CONN[x.first]->sendStr(cmd);
+            SAVA_WORKER_CONN[x.first]->recvStr(ack);
             plog(cmd.c_str());
         }
     }
@@ -151,6 +152,7 @@ void Daemon::pregelWriteMessages() {
 
 void Daemon::pregelExecution() {
     string cmd = "./mp4/sava/runner " + SAVA_APP_NAME + " " + to_string(SAVA_ROUND) + " " + to_string(SAVA_NUM_VERTICES) + " " + SAVA_COMBINATOR;
+    cmd += " >> test.txt";
     system(cmd.c_str());
 }
 
@@ -308,18 +310,65 @@ int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
     SAVA_ROUND = step;
     plog("ROUND: %d", SAVA_ROUND);
     plog("Using combinator: %s", SAVA_COMBINATOR.c_str());
+    auto start = std::chrono::system_clock::now();
     pregelInitStep();
+    plog("pregelInitStep()");
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> dif = end - start;
+    plog("takes %lf second", dif.count());
+    start = std::chrono::system_clock::now();
     pregelWriteEdges();
+    plog("pregelWriteEdge()");
     pregelWriteMessages();
+    plog("pregelWriteMessages()");
     pregelWriteVertices();
+    plog("pregelWriteVertices()");
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    plog("takes %lf second", dif.count());
+    start = std::chrono::system_clock::now();
     pregelExecution();
+    plog("pregelExecution()");
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    plog("takes %lf second", dif.count());
+
+    start = std::chrono::system_clock::now();
     pregelReadVertices();
+    plog("pregelReadVertices()");
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    plog("takes %lf second", dif.count());
+
+    start = std::chrono::system_clock::now();
     pregelReadLocalMessages();
+    plog("pregelReadLocalMessages()");
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    plog("takes %lf second", dif.count());
+
+    start = std::chrono::system_clock::now();
     pregelCombineMessages();
+    plog("pregelCombineMessages()");
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    plog("takes %lf second", dif.count());
+
+    start = std::chrono::system_clock::now();
     pregelGenRemoteMessages();
+    plog("pregelGenRemoteMessages()");
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    plog("takes %lf second", dif.count());
+
+    start = std::chrono::system_clock::now();
     pregelReadRemoteMessages();
+    plog("pregelReadRemoteMessages()");
     system("mv ./mp4/sava/rmsgs_*.txt ./mp4/tmp/rmsgs_*.txt");
     system("mv ./mp4/sava/outmsgs_*.txt ./mp4/tmp/outmsgs_*.txt");
     sock->sendStr(to_string(PREGEL_IN_MESSAGES.size()));
+    end = std::chrono::system_clock::now();
+    dif = end - start;
+    plog("takes %lf second", dif.count());    
     return 0;
 }

@@ -35,8 +35,16 @@ void Daemon::savaHandler(TCPSocket *sock) {
                 return;
             }
             sock->sendStr("ack");
-            savaTask(sock, app, input, output, comb);
-        } else if (prefixMatch(info, "savasendinputs")){
+
+            if (savaComplieApp(sock)) {
+                sock->sendStr("error: Client code cannot be compiled.");
+                return;
+            }
+
+            
+            while (savaTask(sock, app, input, output, comb)) {
+            };
+        } else if (prefixMatch(info, "savasendinput")){
             string msg;
             system("rm ./mp4/sava/*.txt");
             system("rm ./mp4/sava/runner");
@@ -77,11 +85,35 @@ void Daemon::savaHandler(TCPSocket *sock) {
             }
         } else if (prefixMatch(info, "savaworkermsgs")) {
             info = info.substr(info.find(";")+1, info.length());
+            sock->sendStr("ack");
             string fname = "./mp4/sava/rmsgs_" + info.substr(0, 1) + ".txt";
             sock->recvFile(fname);
             msg_lock.lock();
             SAVA_NUM_MSG++;
             msg_lock.unlock();
+        } else if (prefixMatch(info, "savareplicatemeta")) {
+            info = info.substr(info.find(";")+1, info.length());
+            SAVA_APP_NAME = info.substr(0, info.find(";"));
+            info = info.substr(info.find(";")+1, info.length());
+            SAVA_INPUT = info.substr(0, info.find(";"));
+            info = info.substr(info.find(";")+1, info.length());
+            SAVA_OUTPUT = info.substr(0, info.find(";"));
+            info = info.substr(info.find(";")+1, info.length());
+            SAVA_COMBINATOR = info.substr(0, info.find(";"));
+            info = info.substr(info.find(";")+1, info.length());
+            SAVA_STATE = stoi(info.substr(0, info.find(";")));
+            info = info.substr(info.find(";")+1, info.length());
+            SAVA_ROUND = stoi(info.substr(0, info.find(";")));
+            sock->sendStr("ack");
+            system("./mp4/sava/runner");
+            if (sock->recvFile("./mp4/sava/runner")){
+                plog("Error in receiving binary file");
+                return;
+            } else {
+                sock->sendStr("ack");
+            }
+
+
         } else {
             sock->sendStr("ack");
             return;
