@@ -4,7 +4,7 @@ int Daemon::savaCompile() {
     string command;
     command = "cp ./mp4/tmp/client.cpp ./mp4/sava/client.cpp";
     system(command.c_str());
-    command = "g++ -O3 -std=c++11 -o ./mp4/sava/runner ./mp4/sava/client.cpp ./mp4/sava/pregel.cpp";
+    command = "g++ -O3 -std=c++11 -o ./mp4/sava/runner ./mp4/sava/client.cpp ./mp4/sava/pregel.cpp ./mp4/sava/tcpsocket.cpp";
     try {
         system(command.c_str());
     } catch (...) {

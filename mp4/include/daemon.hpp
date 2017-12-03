@@ -109,16 +109,11 @@ public:
 	void 	savaClientResult(TCPSocket *sock, int type, int num);
 	void 	savaHandler(TCPSocket *sock);
 	int 	savaTask(TCPSocket *sock, string app, string input, string output, string comb);
-	void 	pregelInitStep();
-    void 	pregelWriteEdges();
-    void 	pregelWriteMessages();
-    void 	pregelWriteVertices();
-    void 	pregelExecution();
-    void 	pregelReadVertices();
-    void 	pregelReadLocalMessages();
-	void 	pregelCombineMessages();
-    void 	pregelGenRemoteMessages();
-    void 	pregelReadRemoteMessages();
+	void 	savaClientInitStep();
+    void 	savaMessageExchange();
+	void 	savaSuperstep();
+    void 	savaReadRemoteMessages();
+	int		savaActiveNodes();
 
 	/* File functions */
 	void 		clearNodeFile(int id);

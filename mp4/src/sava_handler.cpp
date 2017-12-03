@@ -40,26 +40,31 @@ void Daemon::savaHandler(TCPSocket *sock) {
                 sock->sendStr("error: Client code cannot be compiled.");
                 return;
             }
-
-            
+    
             while (savaTask(sock, app, input, output, comb)) {
             };
         } else if (prefixMatch(info, "savasendinput")){
             string msg;
+            system("pkill runner");
             system("rm ./mp4/sava/*.txt");
             system("rm ./mp4/sava/runner");
             sock->sendStr("ack");
             sock->recvFile("./mp4/sava/vertices.txt");
+            plog("vtx file received");
             sock->sendStr("ack");
             sock->recvFile("./mp4/sava/edges.txt");
+            plog("edges file received");
             sock->sendStr("ack");
             sock->recvFile("./mp4/sava/runner");
+            plog("binary file received");
             system("chmod 777 ./mp4/sava/runner");
             sock->sendStr("ack");
+            plog("files received");
             sock->recvStr(msg);
             sock->sendStr("ack");
             SAVA_APP_NAME = msg.substr(0, msg.find(";"));
             SAVA_COMBINATOR = msg.substr(msg.find(";")+1, msg.length());
+            plog("APP: %s COMBINATOR: %s", SAVA_APP_NAME.c_str(), SAVA_COMBINATOR.c_str());
         } else if (prefixMatch(info, "savaclientinit")) {
             SAVA_NUM_VERTICES = stoi(info.substr(info.find(";")+1, info.length()));
             sock->sendStr("ack");

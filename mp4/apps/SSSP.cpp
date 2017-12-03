@@ -1,7 +1,7 @@
 #include "exec.hpp"
 #define DOUBLEINF 10000000.0
 
-void Vertex::Compute(MessageIterator msgs) {
+void Vertex::Compute() {
     if (Superstep() == 0) SetValue(DOUBLEINF);
     double minDist = (VertexID() == 1) ? 0 : DOUBLEINF;
     for (auto x : GetMessages()) {

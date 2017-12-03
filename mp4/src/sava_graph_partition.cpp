@@ -53,34 +53,47 @@ int Daemon::savaPartitionGraph() {
     }
     fclose(fp);
 
+
+    FILE *fps[SAVA_NUM_WORKER];
     for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
-        fp = fopen("./mp4/tmp/part_v.txt", "w");
-        for (auto x : SAVA_VERTEX_MAPPING) {
-            if (x.second != i) continue;
-            fprintf(fp, "%d\n", x.first);
+        string fname = "./mp4/tmp/part_v_" + to_string(i) + ".txt";
+        fps[i-1] = fopen(fname.c_str(), "w");
+    }
+    for (auto x : SAVA_VERTEX_MAPPING) {
+        fprintf(fps[x.second-1], "%d\n", x.first);
+    }
+    for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
+        fclose(fps[i-1]);
+    }
+
+    for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
+        string fname = "./mp4/tmp/part_e_" + to_string(i) + ".txt";
+        fps[i-1] = fopen(fname.c_str(), "w");
+    }
+    for (auto x : SAVA_EDGES) {
+        int idx = SAVA_VERTEX_MAPPING[x.first]-1;
+        fprintf(fps[idx], "%d %lu", x.first, x.second.size());
+        for (auto w : x.second) {
+            fprintf(fps[idx], " %d %lf", w, 1.0);
         }
-        fclose(fp);
-        
-        fp = fopen("./mp4/tmp/part_e.txt", "w");
-        for (auto x : SAVA_EDGES) {
-            if (SAVA_VERTEX_MAPPING[x.first] != i) continue;
-            fprintf(fp, "%d %lu", x.first, x.second.size());
-            for (auto w : x.second) {
-                fprintf(fp, " %d %lf", w, 1.0);
-            }
-            fprintf(fp, "\n");
-        }
-        fclose(fp);
+        fprintf(fps[idx], "\n");
+    }
+    for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
+        fclose(fps[i-1]);
+    }
+
+    
+    for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
 
         TCPSocket sock_w(member_list[SAVA_WORKER_MAPPING[i]].ip, BASEPORT + 4);
 
         cmd = "savasendinput;";
         sock_w.sendStr(cmd.c_str());
         sock_w.recvStr(ack);
-        fname = "./mp4/tmp/part_v.txt";
+        fname = "./mp4/tmp/part_v_" + to_string(i) + ".txt";
         sock_w.sendFile(fname.c_str());
         sock_w.recvStr(ack);
-        fname = "./mp4/tmp/part_e.txt";
+        fname = "./mp4/tmp/part_e_" + to_string(i) + ".txt";
         sock_w.sendFile(fname.c_str());
         sock_w.recvStr(ack);
         fname = "./mp4/sava/runner";

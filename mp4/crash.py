@@ -7,6 +7,7 @@ USER = mp_config.USER
 def crash(id):
     server = "%s@fa17-cs425-g59-%02d.cs.illinois.edu" % (USER, id)
     os.system("ssh %s \'pkill -u %s server\'" % (server, USER))
+    os.system("ssh %s \'pkill -u %s runner\'" % (server, USER))
     os.system("ssh %s \'/sbin/fuser -k %d/tcp\'" % (server, (PORT+3)))
     os.system("ssh %s \'/sbin/fuser -k %d/tcp\'" % (server, (PORT+4)))
 

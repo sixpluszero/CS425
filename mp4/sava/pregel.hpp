@@ -40,3 +40,23 @@ class Edge {
             val = v;
         }
 };
+
+class KV {
+    public:
+        double value;
+        int id;
+
+        KV(int id_, double val_) {
+            value = val_;
+            id = id_;
+        }
+
+        const bool operator < (const KV &r) const {
+            return value < r.value;
+        }
+
+        const bool operator > (const KV &r) const {
+            return value > r.value;
+        }
+
+};

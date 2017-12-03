@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <assert.h>
 #include <chrono>
+#include <queue>
+#include "signal.h"
 #include "pregel.hpp"
 using namespace std;
 
@@ -16,7 +18,7 @@ typedef vector<Edge>& EdgeIterator;
 
 extern int SUPERSTEP, NUM_VERTICES;
 extern map<int, vector<Message> > VERTEX_IN_MESSAGES, VERTEX_NEXT_MESSAGES;
-extern map<int, vector<Edge> > VERTEX_EDGES;
+extern map<int, vector<Edge> > EDGES;
 
 
 class Vertex {
@@ -29,7 +31,7 @@ class Vertex {
             id = id_;
         }
 
-        void Compute(MessageIterator msgs);
+        void Compute();
 
         int VertexID() {
             return id;
@@ -44,11 +46,11 @@ class Vertex {
         }
 
         int NumNeightbors() {
-            if (VERTEX_EDGES.find(id) == VERTEX_EDGES.end()) {
+            if (EDGES.find(id) == EDGES.end()) {
                 vector<Edge> tmp;
-                VERTEX_EDGES[id] = tmp;
+                EDGES[id] = tmp;
             }
-            return VERTEX_EDGES[id].size();            
+            return EDGES[id].size();            
         }
 
         double GetValue() {
@@ -75,11 +77,11 @@ class Vertex {
         }
 
         EdgeIterator GetOutEdges() {
-            if (VERTEX_EDGES.find(id) == VERTEX_EDGES.end()) {
+            if (EDGES.find(id) == EDGES.end()) {
                 vector<Edge> tmp;
-                VERTEX_EDGES[id] = tmp;
+                EDGES[id] = tmp;
             }
-            return VERTEX_EDGES[id];
+            return EDGES[id];
         }
 
         MessageIterator GetMessages() {
