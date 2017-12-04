@@ -137,7 +137,7 @@ void Daemon::timeout() {
     vector<string> del_node;
     for (auto it = contact_list.begin(); it != contact_list.end(); it++) {
       if ((ts - it->second) > FAILURE) {
-        plog("crash %d(%s/%lld) failed (latest %lld)", it->first, member_list[it->first].ip.c_str(), member_list[it->first].join_timestamp, it->second);
+        plog("crash %d(%s/%lld) failed at %lld (latest %lld)", it->first, member_list[it->first].ip.c_str(), member_list[it->first].join_timestamp, ts, it->second);
         to_remove.push_back(it->first);
       }
     }

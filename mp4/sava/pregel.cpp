@@ -194,19 +194,19 @@ void init() {
 
 void superstep() {
     FILE *fp = fopen("./runner.log", "a");
-    fprintf(fp, "entering execution\n");
+    fprintf(fp, "entering execution %d\n", SUPERSTEP);
     fclose(fp);
     execution();
     fp = fopen("./runner.log", "a");
-    fprintf(fp, "finish execution\n");
+    fprintf(fp, "finish execution %d\n", SUPERSTEP);
     fclose(fp);
     combineMessages();
     fp = fopen("./runner.log", "a");
-    fprintf(fp, "finish combineMessages\n");
+    fprintf(fp, "finish combineMessages %d\n", SUPERSTEP);
     fclose(fp);
     writeMessages();
     fp = fopen("./runner.log", "a");
-    fprintf(fp, "finish writeMessages\n");
+    fprintf(fp, "finish writeMessages %d\n", SUPERSTEP);
     fclose(fp);
 }
 
@@ -275,7 +275,15 @@ void msgHandler(TCPSocket *sock) {
         fprintf(fp, "enter superstep\n");
         fclose(fp);        
         superstep();
-        sock->sendStr("ack");
+        if (sock->sendStr("ack")) {
+            FILE *fp2 = fopen("./runner.log", "a");
+            fprintf(fp2, "sendback ack problem\n");
+            fclose(fp2);
+        } else {
+            FILE *fp2 = fopen("./runner.log", "a");
+            fprintf(fp2, "sendback ack no problem\n");
+            fclose(fp2);
+        }
     } else if (prefixMatch(info, "remotemsg")) {
         readRemoteMsgs();
         sock->sendStr("ack");

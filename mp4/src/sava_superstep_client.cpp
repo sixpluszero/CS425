@@ -4,7 +4,6 @@ void Daemon::savaInitPregelClient() {
     FILE *fp;
     string fname, cmd, ack;
     int src, dst;
-    SAVA_NUM_MSG = 0;
     SAVA_WORKER_MAPPING.clear();
     fname = "./mp4/sava/fullwmap.txt";
     fp = fopen(fname.c_str(), "r");
@@ -36,25 +35,55 @@ void Daemon::savaInitPregelClient() {
 
 void Daemon::savaClientInitStep() {
     string cmd, ack;
-    SAVA_NUM_MSG = 0;
     SAVA_WORKER_CONN.clear();
     for (auto x : SAVA_WORKER_MAPPING) {
         if (x.second == self_index) {
             SAVA_WORKER_CONN[x.first] = NULL;
         } else {
             SAVA_WORKER_CONN[x.first] = new TCPSocket(member_list[x.second].ip, BASEPORT + 4);
-            cmd = "savaworkermsgs;" + to_string(SAVA_WORKER_ID);
-            SAVA_WORKER_CONN[x.first]->sendStr(cmd);
-            SAVA_WORKER_CONN[x.first]->recvStr(ack);
-            plog(cmd.c_str());
+            cmd = "savaworkermsgs;" + to_string(SAVA_WORKER_ID) + ";" + to_string(SAVA_ROUND) + ";"; 
+            //plog("try connecting to %d", x.first);
+            if (SAVA_WORKER_CONN[x.first]->sendStr(cmd)) {
+                plog("error in sending connection to %d", x.first);
+            } 
+            //plog("ok1 %d %lu", x.first, SAVA_WORKER_CONN.size());
+            if (SAVA_WORKER_CONN[x.first]->recvStr(ack)) {
+                plog("error in receiving ack from %d", x.first);
+            }
+            //plog("ok2 %d", x.first);
         }
     }
+}
+
+void Daemon::savaSuperstep() {
+    string ack;
+    plog("entering superstep.0");
+    
+    RUNNER_SOCK = new TCPSocket(member_list[SAVA_WORKER_MAPPING[SAVA_WORKER_ID]].ip, 9999);
+    plog("entering superstep.0.5");
+    if (RUNNER_SOCK->sendStr("superstep")) {
+        plog("error in superstep msg");
+        return;
+    } else {
+        printf("pentering superstep.1\n");
+        plog("entering superstep.1");
+    }
+    
+    if (RUNNER_SOCK->recvStr(ack)) {
+        plog("error in superstep recv");
+        return;        
+    } else {
+        printf("pentering superstep.2\n");
+        plog("entering superstep.2");
+    }
+    
 }
 
 void Daemon::savaMessageExchange() {
     for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
         if (i == SAVA_WORKER_ID) continue;
         string fname = "./mp4/sava/outmsgs_" + to_string(i) + ".txt";
+        plog("sending %s null?%d", fname.c_str(), SAVA_WORKER_CONN.find(i) == SAVA_WORKER_CONN.end());
         SAVA_WORKER_CONN[i]->sendFile(fname);
     }
     plog("Sent messages to other workers");
@@ -62,47 +91,29 @@ void Daemon::savaMessageExchange() {
     plog("Receive messages from other workers");
 }
 
-void Daemon::savaSuperstep() {
-    string ack;
-    TCPSocket *exec_sock = new TCPSocket(member_list[SAVA_WORKER_MAPPING[SAVA_WORKER_ID]].ip, 9999);
-    if (exec_sock->sendStr("superstep")) {
-        plog("error in superstep msg");
-        return;
-    } 
-    
-    if (exec_sock->recvStr(ack)) {
-        plog("error in superstep recv");
-        return;        
-    }
-}
-
 void Daemon::savaReadRemoteMessages() {
     string ack;
-    TCPSocket *exec_sock = new TCPSocket(member_list[SAVA_WORKER_MAPPING[SAVA_WORKER_ID]].ip, 9999);
-    exec_sock->sendStr("remotemsg");
-    exec_sock->recvStr(ack);
+    RUNNER_SOCK = new TCPSocket(member_list[SAVA_WORKER_MAPPING[SAVA_WORKER_ID]].ip, 9999);
+    RUNNER_SOCK->sendStr("remotemsg");
+    RUNNER_SOCK->recvStr(ack);
 }
 
 int Daemon::savaActiveNodes() {
     string ack;
-    TCPSocket *exec_sock = new TCPSocket(member_list[SAVA_WORKER_MAPPING[SAVA_WORKER_ID]].ip, 9999);
-    exec_sock->sendStr("active");
-    exec_sock->recvStr(ack);
+    RUNNER_SOCK = new TCPSocket(member_list[SAVA_WORKER_MAPPING[SAVA_WORKER_ID]].ip, 9999);
+    RUNNER_SOCK->sendStr("active");
+    RUNNER_SOCK->recvStr(ack);
     return stoi(ack);
 }
 
 int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
     string fname, ack;
+    SAVA_NUM_MSG = 0;
     SAVA_ROUND = step;
     plog("ROUND: %d", SAVA_ROUND);
     plog("Using combinator: %s", SAVA_COMBINATOR.c_str());
-
-    //auto start = std::chrono::system_clock::now();
     savaClientInitStep();
     plog("savaClientInitStep() finished");
-    //auto end = std::chrono::system_clock::now();
-    //std::chrono::duration<double> dif = end - start;
-    //plog("takes %lf second", dif.count());
     savaSuperstep();
     plog("savaSuperstep() finished");
     savaMessageExchange();
@@ -112,7 +123,7 @@ int Daemon::savaClientSuperstep(TCPSocket *sock, int step) {
     int cnt = savaActiveNodes();
     sock->sendStr(to_string(cnt));
     plog("savaActiveNodes() finished");
-    system("mv ./mp4/sava/rmsgs_*.txt ./mp4/tmp/rmsgs_*.txt");
-    system("mv ./mp4/sava/outmsgs_*.txt ./mp4/tmp/outmsgs_*.txt");
+    system("mv ./mp4/sava/rmsgs_*.txt ./mp4/tmp/");
+    system("mv ./mp4/sava/outmsgs_*.txt ./mp4/tmp/");
     return 0;
 }

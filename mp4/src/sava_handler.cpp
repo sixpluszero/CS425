@@ -1,7 +1,7 @@
 #include "daemon.hpp"
 
 void Daemon::savaHandler(TCPSocket *sock) {
-    string info, cmd;
+    string info, cmd, fname;
     int r;
     r = sock->recvStr(info);
     if (r == 1) {
@@ -25,7 +25,7 @@ void Daemon::savaHandler(TCPSocket *sock) {
                 info = info.substr(output.length()+1, info.length());
                 comb = info;    
             }
-            plog("New Task: %s %s %s %s %s", app.c_str(), input.c_str(), output.c_str(), comb.c_str());
+            plog("New Task: %s %s %s %s", app.c_str(), input.c_str(), output.c_str(), comb.c_str());
             if (!hasFile(input)) {
                 sock->sendStr("error: input file not found.");
                 return;
@@ -65,6 +65,15 @@ void Daemon::savaHandler(TCPSocket *sock) {
             SAVA_APP_NAME = msg.substr(0, msg.find(";"));
             SAVA_COMBINATOR = msg.substr(msg.find(";")+1, msg.length());
             plog("APP: %s COMBINATOR: %s", SAVA_APP_NAME.c_str(), SAVA_COMBINATOR.c_str());
+            SAVA_WORKER_CONN.clear();
+            SAVA_WORKER_MAPPING.clear();
+            plog("Client state: %lu, %lu, %lu, %lu", SAVA_VERTEX_MAPPING.size(), SAVA_WORKER_MAPPING.size(), SAVA_EDGES.size(), SAVA_WORKER_CONN.size());
+            SAVA_STATE = 0;
+            SAVA_NUM_WORKER = 0;
+            SAVA_NUM_VERTICES = 0;
+            SAVA_WORKER_ID = 0;
+            SAVA_NUM_MSG = 0;
+            plog("Client state: %d %d %d %d %d", SAVA_STATE, SAVA_NUM_WORKER, SAVA_NUM_VERTICES, SAVA_WORKER_ID, SAVA_NUM_MSG);
         } else if (prefixMatch(info, "savaclientinit")) {
             SAVA_NUM_VERTICES = stoi(info.substr(info.find(";")+1, info.length()));
             sock->sendStr("ack");
@@ -90,12 +99,28 @@ void Daemon::savaHandler(TCPSocket *sock) {
             }
         } else if (prefixMatch(info, "savaworkermsgs")) {
             info = info.substr(info.find(";")+1, info.length());
-            sock->sendStr("ack");
-            string fname = "./mp4/sava/rmsgs_" + info.substr(0, 1) + ".txt";
-            sock->recvFile(fname);
+            int rw = stoi(info.substr(0, info.find(";")));
+            info = info.substr(info.find(";")+1, info.length());
+            int rr = stoi(info.substr(0, info.find(";")));
+            plog("%d: %d. (%d)", rw, rr, SAVA_ROUND);
+            while (rr != SAVA_ROUND);
+            plog("info from %d", rw);
+            if (sock->sendStr("ack")) {
+                plog("error in sending ack");
+            }
+            fname = "./mp4/sava/rmsgs_" + to_string(rw) + ".txt";
+            plog("info ok %d %s", rw, fname.c_str());
+            if (sock->recvFile(fname)) {
+                plog("error in receiving remote messages from %d", rw);
+            } else {
+                printf("file received ok\n");
+            }
+            printf("file ok\n");
+            plog("info %d want to inc msg cnt", rw);
             msg_lock.lock();
             SAVA_NUM_MSG++;
             msg_lock.unlock();
+            plog("finish this message's collection");
         } else if (prefixMatch(info, "savareplicatemeta")) {
             info = info.substr(info.find(";")+1, info.length());
             SAVA_APP_NAME = info.substr(0, info.find(";"));

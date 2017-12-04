@@ -248,8 +248,6 @@ int TCPSocket::recvStr(string &result) {
   try {
     while (totalBytesReceived < totalBytes) {
     if ((bytesReceived = (recv(recvBuffer, RCVBUFSIZE))) <= 0) {
-      //cerr << "Unable to read";
-      //exit(1);
       return 1;
     }
     recvBuffer[bytesReceived] = '\0';
@@ -262,8 +260,10 @@ int TCPSocket::recvStr(string &result) {
     totalBytesReceived += bytesReceived;
     }
   } catch (...) {
+    
     return 1;
   }
+  
   return 0;
 }
 
@@ -298,9 +298,11 @@ int TCPSocket::sendFile(string fname) {
     }
   } catch (...) {
     fclose(fp);
+    printf("file receiving error.\n");
     return 1;
   }
   fclose(fp);
+  printf("file received.\n");
   return 0;
 } 
 

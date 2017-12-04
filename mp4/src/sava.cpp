@@ -120,30 +120,26 @@ int Daemon::savaTask(TCPSocket *sock, string app, string input, string output, s
     SAVA_ROUND = 0;
     SAVA_STATE = 0; // Finish is 2;
     SAVA_GRAPH = 0; // Default is undirected.
+    SAVA_NUM_MSG = 0;
+    SAVA_NUM_WORKER = 0;
+    SAVA_NUM_VERTICES = 0;
+    SAVA_WORKER_ID = 0;
     if (SAVA_COMBINATOR == "") SAVA_COMBINATOR = "none";
+    SAVA_VERTEX_MAPPING.clear();
+    SAVA_WORKER_MAPPING.clear();
+    SAVA_EDGES.clear();
+    SAVA_WORKER_CONN.clear();
 
     total_time = 0;
     auto start = std::chrono::system_clock::now();
-    // Replicate to standby master
-    //savaReplicateMeta();
-    plog("[TODO]Replication metadata to standby master completed.");
-    auto end = std::chrono::system_clock::now();
-    std::chrono::duration<double> dif = end - start;
-    total_time += dif.count();
-    plog("Init time %f", dif.count());
-    cmd = "Init time " + to_string(dif.count()) + "/" + to_string(total_time);
-    sock->sendStr(cmd);
-    sock->recvStr(ack);
-
-    start = std::chrono::system_clock::now();
     // Partiton graph
     savaPartitionGraph();
     plog("Graph partition and distribution completed.");
     // Init parameters to workers
     savaInitPregelMaster();
     plog("Init worker subgraph.");
-    end = std::chrono::system_clock::now();
-    dif = end - start;
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> dif = end - start;
     total_time += dif.count();
     plog("Graph distribution time %f", dif.count());
     cmd = "Graph distribution time " + to_string(dif.count()) + "/" + to_string(total_time);
@@ -170,12 +166,12 @@ int Daemon::savaTask(TCPSocket *sock, string app, string input, string output, s
 
     if (SAVA_STATE == 1) {
         plog("About to stop");
-        usleep(2000000);
+        sock->sendStr("Task failed. Restarting");
+        sock->recvStr(ack);
+        usleep(5000000);
         plog("Current cluster size: %d", member_list.size());
         plog(membersToString());
         plog("Task failed. Restarting");
-        sock->sendStr("Task failed. Restarting");
-        sock->recvStr(ack);
         //sock->sendStr("error");
         return 1;
     }

@@ -55,7 +55,12 @@ int Daemon::savaMasterSuperstep() {
     SAVA_WORKER_CONN.clear();
     for (int i = 1; i <= SAVA_NUM_WORKER; i++) {
         SAVA_WORKER_CONN[i] = new TCPSocket(member_list[SAVA_WORKER_MAPPING[i]].ip, BASEPORT + 4);
-        SAVA_WORKER_CONN[i]->sendStr("savaclientstep;"+std::to_string(SAVA_ROUND));
+        if (SAVA_WORKER_CONN[i]->sendStr("savaclientstep;"+std::to_string(SAVA_ROUND))) {
+            plog("Error in connection with %d", i);
+            ret = 1;
+        } else {
+            plog("Sent command to %d", i);
+        }
     }
 
     count = 0;
