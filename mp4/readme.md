@@ -36,5 +36,9 @@ Suppose we login to VM X, we can perform the following commands.
     * `python mp4/sdfs.py get sdfsfilename path/to/local/file`
 10. Delete file in SDFS.
     * `python mp4/sdfs.py delete sdfsfilename`
+10. Submit a task to SAVA.
+    * `python mp4/sava.py SSSP mp4/apps/SSSP.cpp rinput TOP-25 MIN`
+    * `python mp4/sava.py PageRank mp4/apps/PageRank.cpp rinput TOP-25 SUM`
+    
     
     
