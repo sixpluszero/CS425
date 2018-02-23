@@ -4,7 +4,7 @@ We implemented the following projects from scratch. The detailed description of 
 ### MP1: Distributed Log Querier 
 Implemented a "grep" function to query distributed log files on multiple machines.
 ### MP2: Distributed Group Membership  
-A machine could join or leave a membership based on heartbeat. At most 4 machines can fail simultaneously. Message Cost: O(1).
+A machine could join or leave a membership based on heartbeat detection. At most 4 machines can fail simultaneously. Message Cost: O(1).
 ### MP3: Distributed File System  
 3 replica. Time-bounded write-write conflicts. Tolerant up to 2 machine failures at a time.
 ### MP4: Distributed Graph Processing System  
