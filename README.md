@@ -8,4 +8,4 @@ At most 4 machines can fail simultaneously. Message Cost: O(1).
 ### MP3: Distributed File System  
 3 replica. Time-bounded write-write conflicts. Tolerant up to 2 machine failures at a time.
 ### MP4: Distributed Graph Processing System  
-Based on Pregel Algorithm. Implemented Pagerank and Single Source Shortest Path functions. ~56% faster than GraphX.
+Based on Pregel Algorithm. Implemented PageRank and Single Source Shortest Path functions(SSSP). ~170% faster than GraphX in PageRank. ~400% faster than GraphX in SSSP.
