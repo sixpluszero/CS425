@@ -1,5 +1,5 @@
 # CS425
-We implemented the following projects from scratch. The detailed description of each project is in the subfolder, the requirements' pdf and the report.
+We implemented the following projects from scratch. A project is always based on its previous project. The detailed description of each project is in the subfolder, the requirements' pdf and the report.
 
 ### MP1: Distributed Log Querier 
 Implemented a "grep" function to query distributed log files on multiple machines.
